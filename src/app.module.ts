@@ -5,6 +5,8 @@ import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { BillsModule } from './modules/bills/bills.module';
 import { MembersModule } from './modules/members/members.module';
+import { PlatformAuthModule } from './modules/platform-auth/platform-auth.module';
+import { PlatformShopsModule } from './modules/platform-shops/platform-shops.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { RewardsModule } from './modules/rewards/rewards.module';
@@ -29,6 +31,8 @@ import { StaffModule } from './modules/staff/staff.module';
     StaffModule,
     BillsModule,
     ReportsModule,
+    PlatformAuthModule,
+    PlatformShopsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

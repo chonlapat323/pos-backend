@@ -9,12 +9,17 @@ import { UpdateServiceDto } from './dto/update-service.dto';
 export class ServicesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(shopId: string, query: QueryServiceDto): Promise<PaginatedResult<unknown>> {
+  async findAll(
+    shopId: string,
+    query: QueryServiceDto,
+  ): Promise<PaginatedResult<unknown>> {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 20;
     const where = {
       shopId,
-      ...(query.search ? { name: { contains: query.search, mode: 'insensitive' as const } } : {}),
+      ...(query.search
+        ? { name: { contains: query.search, mode: 'insensitive' as const } }
+        : {}),
       ...(query.categoryId ? { categoryId: query.categoryId } : {}),
       ...(query.status ? { status: query.status } : {}),
     };
@@ -34,7 +39,10 @@ export class ServicesService {
   }
 
   async findOne(shopId: string, id: string) {
-    const service = await this.prisma.service.findFirst({ where: { id, shopId }, include: { category: true } });
+    const service = await this.prisma.service.findFirst({
+      where: { id, shopId },
+      include: { category: true },
+    });
     if (!service) throw new NotFoundException('Service not found');
     return service;
   }

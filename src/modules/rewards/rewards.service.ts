@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRewardDto } from './dto/create-reward.dto';
 import { UpdateRewardDto } from './dto/update-reward.dto';
@@ -8,11 +12,16 @@ export class RewardsService {
   constructor(private readonly prisma: PrismaService) {}
 
   findAll(shopId: string) {
-    return this.prisma.reward.findMany({ where: { shopId }, orderBy: { pointCost: 'asc' } });
+    return this.prisma.reward.findMany({
+      where: { shopId },
+      orderBy: { pointCost: 'asc' },
+    });
   }
 
   async findOne(shopId: string, id: string) {
-    const reward = await this.prisma.reward.findFirst({ where: { id, shopId } });
+    const reward = await this.prisma.reward.findFirst({
+      where: { id, shopId },
+    });
     if (!reward) throw new NotFoundException('Reward not found');
     return reward;
   }
@@ -34,10 +43,14 @@ export class RewardsService {
 
   async redeem(shopId: string, rewardId: string, memberId: string) {
     const reward = await this.findOne(shopId, rewardId);
-    const member = await this.prisma.member.findFirst({ where: { id: memberId, shopId } });
+    const member = await this.prisma.member.findFirst({
+      where: { id: memberId, shopId },
+    });
     if (!member) throw new NotFoundException('Member not found');
     if (member.pointBalance < reward.pointCost) {
-      throw new BadRequestException('Member does not have enough points for this reward');
+      throw new BadRequestException(
+        'Member does not have enough points for this reward',
+      );
     }
 
     const [, pointTransaction] = await this.prisma.$transaction([

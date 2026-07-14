@@ -1,5 +1,12 @@
 import { ServiceStatus } from '@prisma/client';
-import { IsEnum, IsInt, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class CreateServiceDto {
   @IsString()

@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMemberDto } from './dto/create-member.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
@@ -29,7 +33,11 @@ export class MembersService {
       where: { id, shopId },
       include: {
         pointTransactions: { orderBy: { createdAt: 'desc' }, take: 20 },
-        bills: { orderBy: { createdAt: 'desc' }, take: 20, include: { items: { include: { service: true } } } },
+        bills: {
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+          include: { items: { include: { service: true } } },
+        },
         visitPhotos: { orderBy: { createdAt: 'desc' } },
       },
     });
@@ -41,10 +49,17 @@ export class MembersService {
     const existing = await this.prisma.member.findUnique({
       where: { shopId_phone: { shopId, phone: dto.phone } },
     });
-    if (existing) throw new ConflictException('Member with this phone already exists in this shop');
+    if (existing)
+      throw new ConflictException(
+        'Member with this phone already exists in this shop',
+      );
 
     return this.prisma.member.create({
-      data: { ...dto, shopId, birthday: dto.birthday ? new Date(dto.birthday) : undefined },
+      data: {
+        ...dto,
+        shopId,
+        birthday: dto.birthday ? new Date(dto.birthday) : undefined,
+      },
     });
   }
 
@@ -52,7 +67,10 @@ export class MembersService {
     await this.assertExists(shopId, id);
     return this.prisma.member.update({
       where: { id },
-      data: { ...dto, birthday: dto.birthday ? new Date(dto.birthday) : undefined },
+      data: {
+        ...dto,
+        birthday: dto.birthday ? new Date(dto.birthday) : undefined,
+      },
     });
   }
 
@@ -63,7 +81,10 @@ export class MembersService {
   }
 
   private async assertExists(shopId: string, id: string) {
-    const member = await this.prisma.member.findFirst({ where: { id, shopId }, select: { id: true } });
+    const member = await this.prisma.member.findFirst({
+      where: { id, shopId },
+      select: { id: true },
+    });
     if (!member) throw new NotFoundException('Member not found');
   }
 }

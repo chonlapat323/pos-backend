@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { CurrentUserPayload } from '../auth/types';
@@ -23,12 +32,19 @@ export class RewardsController {
   }
 
   @Post()
-  create(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateRewardDto) {
+  create(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: CreateRewardDto,
+  ) {
     return this.rewardsService.create(user.shopId, dto);
   }
 
   @Patch(':id')
-  update(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string, @Body() dto: UpdateRewardDto) {
+  update(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') id: string,
+    @Body() dto: UpdateRewardDto,
+  ) {
     return this.rewardsService.update(user.shopId, id, dto);
   }
 
@@ -38,7 +54,11 @@ export class RewardsController {
   }
 
   @Post(':id/redeem')
-  redeem(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string, @Body() dto: RedeemRewardDto) {
+  redeem(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') id: string,
+    @Body() dto: RedeemRewardDto,
+  ) {
     return this.rewardsService.redeem(user.shopId, id, dto.memberId);
   }
 }

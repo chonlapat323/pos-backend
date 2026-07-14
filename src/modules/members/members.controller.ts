@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { CurrentUserPayload } from '../auth/types';
@@ -12,7 +22,10 @@ export class MembersController {
   constructor(private readonly membersService: MembersService) {}
 
   @Get()
-  findAll(@CurrentUser() user: CurrentUserPayload, @Query('search') search?: string) {
+  findAll(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query('search') search?: string,
+  ) {
     return this.membersService.findAll(user.shopId, search);
   }
 
@@ -22,12 +35,19 @@ export class MembersController {
   }
 
   @Post()
-  create(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateMemberDto) {
+  create(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: CreateMemberDto,
+  ) {
     return this.membersService.create(user.shopId, dto);
   }
 
   @Patch(':id')
-  update(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string, @Body() dto: UpdateMemberDto) {
+  update(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') id: string,
+    @Body() dto: UpdateMemberDto,
+  ) {
     return this.membersService.update(user.shopId, id, dto);
   }
 

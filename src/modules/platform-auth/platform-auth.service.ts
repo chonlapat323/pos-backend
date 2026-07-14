@@ -2,48 +2,42 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
-import { LoginDto } from './dto/login.dto';
-import { JwtPayload } from './types';
+import { PlatformLoginDto } from './dto/login.dto';
+import { PlatformJwtPayload } from './types';
 
 @Injectable()
-export class AuthService {
+export class PlatformAuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
   ) {}
 
-  async login(dto: LoginDto) {
-    const staff = await this.prisma.staffUser.findUnique({
+  async login(dto: PlatformLoginDto) {
+    const admin = await this.prisma.platformAdmin.findUnique({
       where: { email: dto.email },
-      include: { shop: { select: { isActive: true } } },
     });
 
-    if (!staff || !staff.passwordHash || !staff.isActive) {
+    if (!admin) {
       throw new UnauthorizedException('Invalid email or password');
     }
 
     const passwordMatches = await bcrypt.compare(
       dto.password,
-      staff.passwordHash,
+      admin.passwordHash,
     );
     if (!passwordMatches) {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    if (!staff.shop.isActive) {
-      throw new UnauthorizedException('This shop has been suspended');
-    }
-
-    const payload: JwtPayload = {
-      sub: staff.id,
-      shopId: staff.shopId,
-      role: staff.role,
-      name: staff.name,
+    const payload: PlatformJwtPayload = {
+      sub: admin.id,
+      type: 'platform',
+      name: admin.name,
     };
 
     return {
       accessToken: await this.jwtService.signAsync(payload),
-      user: payload,
+      admin: payload,
     };
   }
 }

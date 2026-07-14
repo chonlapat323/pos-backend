@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, ForbiddenException, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  ForbiddenException,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { CurrentUserPayload } from '../auth/types';
@@ -8,7 +18,9 @@ import { StaffService } from './staff.service';
 
 function assertOwner(user: CurrentUserPayload) {
   if (user.role !== 'OWNER') {
-    throw new ForbiddenException('Only the shop owner can manage staff accounts');
+    throw new ForbiddenException(
+      'Only the shop owner can manage staff accounts',
+    );
   }
 }
 
@@ -34,7 +46,11 @@ export class StaffController {
   }
 
   @Patch(':id')
-  update(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string, @Body() dto: UpdateStaffDto) {
+  update(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') id: string,
+    @Body() dto: UpdateStaffDto,
+  ) {
     assertOwner(user);
     return this.staffService.update(user.shopId, id, dto);
   }

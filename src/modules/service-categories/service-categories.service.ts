@@ -9,12 +9,17 @@ import { UpdateServiceCategoryDto } from './dto/update-service-category.dto';
 export class ServiceCategoriesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(shopId: string, query: QueryServiceCategoryDto): Promise<PaginatedResult<unknown>> {
+  async findAll(
+    shopId: string,
+    query: QueryServiceCategoryDto,
+  ): Promise<PaginatedResult<unknown>> {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 20;
     const where = {
       shopId,
-      ...(query.search ? { name: { contains: query.search, mode: 'insensitive' as const } } : {}),
+      ...(query.search
+        ? { name: { contains: query.search, mode: 'insensitive' as const } }
+        : {}),
     };
 
     const [data, total] = await Promise.all([
@@ -40,7 +45,9 @@ export class ServiceCategoriesService {
   }
 
   async findOne(shopId: string, id: string) {
-    const category = await this.prisma.serviceCategory.findFirst({ where: { id, shopId } });
+    const category = await this.prisma.serviceCategory.findFirst({
+      where: { id, shopId },
+    });
     if (!category) throw new NotFoundException('Service category not found');
     return category;
   }

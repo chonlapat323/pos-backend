@@ -33,6 +33,19 @@ async function main() {
 
   console.log('Seeded shop:', shop.slug);
   console.log('Login with: admin@possystem.local / admin1234 (staff id:', owner.id, ')');
+
+  const platformPasswordHash = await bcrypt.hash('platform1234', 10);
+  const platformAdmin = await prisma.platformAdmin.upsert({
+    where: { email: 'platform@possystem.local' },
+    update: {},
+    create: {
+      name: 'Platform Admin',
+      email: 'platform@possystem.local',
+      passwordHash: platformPasswordHash,
+    },
+  });
+
+  console.log('Login with: platform@possystem.local / platform1234 (platform admin id:', platformAdmin.id, ')');
 }
 
 main()

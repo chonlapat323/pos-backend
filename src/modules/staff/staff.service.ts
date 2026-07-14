@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
@@ -20,17 +24,26 @@ export class StaffService {
   constructor(private readonly prisma: PrismaService) {}
 
   findAll(shopId: string) {
-    return this.prisma.staffUser.findMany({ where: { shopId }, select: SAFE_SELECT, orderBy: { createdAt: 'asc' } });
+    return this.prisma.staffUser.findMany({
+      where: { shopId },
+      select: SAFE_SELECT,
+      orderBy: { createdAt: 'asc' },
+    });
   }
 
   async findOne(shopId: string, id: string) {
-    const staff = await this.prisma.staffUser.findFirst({ where: { id, shopId }, select: SAFE_SELECT });
+    const staff = await this.prisma.staffUser.findFirst({
+      where: { id, shopId },
+      select: SAFE_SELECT,
+    });
     if (!staff) throw new NotFoundException('Staff not found');
     return staff;
   }
 
   async create(shopId: string, dto: CreateStaffDto) {
-    const existing = await this.prisma.staffUser.findUnique({ where: { email: dto.email } });
+    const existing = await this.prisma.staffUser.findUnique({
+      where: { email: dto.email },
+    });
     if (existing) throw new ConflictException('Email already in use');
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
@@ -47,7 +60,10 @@ export class StaffService {
     const { password, ...rest } = dto;
     return this.prisma.staffUser.update({
       where: { id },
-      data: { ...rest, ...(password ? { passwordHash: await bcrypt.hash(password, 10) } : {}) },
+      data: {
+        ...rest,
+        ...(password ? { passwordHash: await bcrypt.hash(password, 10) } : {}),
+      },
       select: SAFE_SELECT,
     });
   }

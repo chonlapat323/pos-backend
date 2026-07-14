@@ -20,24 +20,37 @@ export class ReportsService {
     weekStart.setDate(weekStart.getDate() - 6);
     const monthStart = startOfMonth(now);
 
-    const [revenueToday, revenueWeek, revenueMonth, billsToday, newMembersThisMonth, memberPointSum] =
-      await Promise.all([
-        this.prisma.bill.aggregate({
-          where: { shopId, status: 'PAID', createdAt: { gte: todayStart } },
-          _sum: { total: true },
-        }),
-        this.prisma.bill.aggregate({
-          where: { shopId, status: 'PAID', createdAt: { gte: weekStart } },
-          _sum: { total: true },
-        }),
-        this.prisma.bill.aggregate({
-          where: { shopId, status: 'PAID', createdAt: { gte: monthStart } },
-          _sum: { total: true },
-        }),
-        this.prisma.bill.count({ where: { shopId, status: 'PAID', createdAt: { gte: todayStart } } }),
-        this.prisma.member.count({ where: { shopId, createdAt: { gte: monthStart } } }),
-        this.prisma.member.aggregate({ where: { shopId }, _sum: { pointBalance: true } }),
-      ]);
+    const [
+      revenueToday,
+      revenueWeek,
+      revenueMonth,
+      billsToday,
+      newMembersThisMonth,
+      memberPointSum,
+    ] = await Promise.all([
+      this.prisma.bill.aggregate({
+        where: { shopId, status: 'PAID', createdAt: { gte: todayStart } },
+        _sum: { total: true },
+      }),
+      this.prisma.bill.aggregate({
+        where: { shopId, status: 'PAID', createdAt: { gte: weekStart } },
+        _sum: { total: true },
+      }),
+      this.prisma.bill.aggregate({
+        where: { shopId, status: 'PAID', createdAt: { gte: monthStart } },
+        _sum: { total: true },
+      }),
+      this.prisma.bill.count({
+        where: { shopId, status: 'PAID', createdAt: { gte: todayStart } },
+      }),
+      this.prisma.member.count({
+        where: { shopId, createdAt: { gte: monthStart } },
+      }),
+      this.prisma.member.aggregate({
+        where: { shopId },
+        _sum: { pointBalance: true },
+      }),
+    ]);
 
     return {
       revenueToday: Number(revenueToday._sum.total ?? 0),
@@ -52,10 +65,18 @@ export class ReportsService {
   async topServices(shopId: string, limit = 10) {
     const items = await this.prisma.billItem.findMany({
       where: { bill: { shopId, status: 'PAID' } },
-      select: { serviceId: true, quantity: true, priceAtSale: true, service: { select: { name: true } } },
+      select: {
+        serviceId: true,
+        quantity: true,
+        priceAtSale: true,
+        service: { select: { name: true } },
+      },
     });
 
-    const totalsByService = new Map<string, { name: string; totalQuantity: number; totalRevenue: number }>();
+    const totalsByService = new Map<
+      string,
+      { name: string; totalQuantity: number; totalRevenue: number }
+    >();
     for (const item of items) {
       const existing = totalsByService.get(item.serviceId) ?? {
         name: item.service.name,
@@ -82,7 +103,9 @@ export class ReportsService {
       orderBy: { _sum: { total: 'desc' } },
     });
 
-    const staff = await this.prisma.staffUser.findMany({ where: { id: { in: grouped.map((g) => g.staffId) } } });
+    const staff = await this.prisma.staffUser.findMany({
+      where: { id: { in: grouped.map((g) => g.staffId) } },
+    });
     const staffById = new Map(staff.map((s) => [s.id, s]));
 
     return grouped.map((g) => ({
