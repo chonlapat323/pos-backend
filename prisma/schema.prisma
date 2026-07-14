@@ -1,12 +1,227 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum ShopType {
+  NAIL
+  HAIR
+  WAX
+  MULTI
+}
+
+enum StaffRole {
+  OWNER
+  STAFF
+}
+
+enum ServiceStatus {
+  ACTIVE
+  INACTIVE
+  PROMOTION
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  CARD
+}
+
+enum BillStatus {
+  OPEN
+  PAID
+  CANCELLED
+}
+
+enum PointTransactionType {
+  EARN
+  REDEEM
+}
+
+enum PhotoType {
+  BEFORE
+  AFTER
+}
+
+model Shop {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  logoUrl      String?
+  address      String?
+  phone        String?
+  openTime     String?
+  closeTime    String?
+  shopType     ShopType @default(MULTI)
+  bahtPerPoint Int      @default(50)
+  isActive     Boolean  @default(true)
+
+  staff             StaffUser[]
+  categories        ServiceCategory[]
+  services          Service[]
+  members           Member[]
+  rewards           Reward[]
+  bills             Bill[]
+  pointTransactions PointTransaction[]
+  visitPhotos       VisitPhoto[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model StaffUser {
+  id           String    @id @default(cuid())
+  shopId       String
+  shop         Shop      @relation(fields: [shopId], references: [id])
+  name         String
+  email        String?   @unique
+  phone        String?
+  passwordHash String?
+  pinCode      String?
+  role         StaffRole @default(STAFF)
+  isActive     Boolean   @default(true)
+  bills        Bill[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([shopId, phone])
+}
+
+model ServiceCategory {
+  id        String    @id @default(cuid())
+  shopId    String
+  shop      Shop      @relation(fields: [shopId], references: [id])
+  name      String
+  imageUrl  String?
+  sortOrder Int       @default(0)
+  isHidden  Boolean   @default(false)
+  services  Service[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Service {
+  id              String          @id @default(cuid())
+  shopId          String
+  shop            Shop            @relation(fields: [shopId], references: [id])
+  categoryId      String
+  category        ServiceCategory @relation(fields: [categoryId], references: [id])
+  name            String
+  description     String?
+  price           Decimal         @db.Decimal(10, 2)
+  durationMinutes Int
+  imageUrl        String?
+  status          ServiceStatus   @default(ACTIVE)
+  billItems       BillItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Member {
+  id           String    @id @default(cuid())
+  shopId       String
+  shop         Shop      @relation(fields: [shopId], references: [id])
+  phone        String
+  name         String
+  birthday     DateTime?
+  address      String?
+  photoUrl     String?
+  note         String?
+  pointBalance Int       @default(0)
+
+  bills             Bill[]
+  pointTransactions PointTransaction[]
+  visitPhotos       VisitPhoto[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([shopId, phone])
+}
+
+model Reward {
+  id          String  @id @default(cuid())
+  shopId      String
+  shop        Shop    @relation(fields: [shopId], references: [id])
+  name        String
+  description String?
+  imageUrl    String?
+  pointCost   Int
+  isActive    Boolean @default(true)
+
+  redemptions PointTransaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Bill {
+  id            String         @id @default(cuid())
+  shopId        String
+  shop          Shop           @relation(fields: [shopId], references: [id])
+  memberId      String?
+  member        Member?        @relation(fields: [memberId], references: [id])
+  staffId       String
+  staff         StaffUser      @relation(fields: [staffId], references: [id])
+  items         BillItem[]
+  subtotal      Decimal        @db.Decimal(10, 2)
+  discount      Decimal        @default(0) @db.Decimal(10, 2)
+  total         Decimal        @db.Decimal(10, 2)
+  paymentMethod PaymentMethod?
+  pointEarned   Int            @default(0)
+  pointUsed     Int            @default(0)
+  status        BillStatus     @default(OPEN)
+
+  pointTransactions PointTransaction[]
+  visitPhotos       VisitPhoto[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BillItem {
+  id          String  @id @default(cuid())
+  billId      String
+  bill        Bill    @relation(fields: [billId], references: [id], onDelete: Cascade)
+  serviceId   String
+  service     Service @relation(fields: [serviceId], references: [id])
+  priceAtSale Decimal @db.Decimal(10, 2)
+  quantity    Int     @default(1)
+}
+
+model PointTransaction {
+  id       String               @id @default(cuid())
+  shopId   String
+  shop     Shop                 @relation(fields: [shopId], references: [id])
+  memberId String
+  member   Member               @relation(fields: [memberId], references: [id])
+  type     PointTransactionType
+  points   Int
+  billId   String?
+  bill     Bill?                @relation(fields: [billId], references: [id])
+  rewardId String?
+  reward   Reward?              @relation(fields: [rewardId], references: [id])
+  note     String?
+
+  createdAt DateTime @default(now())
+}
+
+model VisitPhoto {
+  id       String    @id @default(cuid())
+  shopId   String
+  shop     Shop      @relation(fields: [shopId], references: [id])
+  billId   String
+  bill     Bill      @relation(fields: [billId], references: [id], onDelete: Cascade)
+  memberId String
+  member   Member    @relation(fields: [memberId], references: [id])
+  type     PhotoType
+  imageUrl String
+
+  createdAt DateTime @default(now())
 }
