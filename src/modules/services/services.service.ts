@@ -1,18 +1,36 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateServiceDto } from './dto/create-service.dto';
+import { QueryServiceDto } from './dto/query-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 
 @Injectable()
 export class ServicesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(shopId: string) {
-    return this.prisma.service.findMany({
-      where: { shopId },
-      include: { category: true },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAll(shopId: string, query: QueryServiceDto): Promise<PaginatedResult<unknown>> {
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 20;
+    const where = {
+      shopId,
+      ...(query.search ? { name: { contains: query.search, mode: 'insensitive' as const } } : {}),
+      ...(query.categoryId ? { categoryId: query.categoryId } : {}),
+      ...(query.status ? { status: query.status } : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.service.findMany({
+        where,
+        include: { category: true },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.service.count({ where }),
+    ]);
+
+    return { data, total, page, pageSize };
   }
 
   async findOne(shopId: string, id: string) {

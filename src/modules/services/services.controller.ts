@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { CurrentUserPayload } from '../auth/types';
 import { CreateServiceDto } from './dto/create-service.dto';
+import { QueryServiceDto } from './dto/query-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { ServicesService } from './services.service';
 
@@ -12,8 +13,8 @@ export class ServicesController {
   constructor(private readonly servicesService: ServicesService) {}
 
   @Get()
-  findAll(@CurrentUser() user: CurrentUserPayload) {
-    return this.servicesService.findAll(user.shopId);
+  findAll(@CurrentUser() user: CurrentUserPayload, @Query() query: QueryServiceDto) {
+    return this.servicesService.findAll(user.shopId, query);
   }
 
   @Get(':id')
