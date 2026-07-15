@@ -38,6 +38,14 @@ export class PlatformServiceCategoriesService {
     return { data, total, page, pageSize };
   }
 
+  findAllForSelect(shopId?: string) {
+    return this.prisma.serviceCategory.findMany({
+      where: shopId ? { shopId } : {},
+      orderBy: { sortOrder: 'asc' },
+      select: { id: true, name: true, shopId: true },
+    });
+  }
+
   async create(dto: CreatePlatformServiceCategoryDto) {
     const shop = await this.prisma.shop.findUnique({
       where: { id: dto.shopId },

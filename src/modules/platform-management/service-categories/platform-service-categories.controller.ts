@@ -25,6 +25,11 @@ export class PlatformServiceCategoriesController {
     return this.service.findAll(query);
   }
 
+  @Get('select')
+  findAllForSelect(@Query('shopId') shopId?: string) {
+    return this.service.findAllForSelect(shopId);
+  }
+
   @Post()
   create(@Body() dto: CreatePlatformServiceCategoryDto) {
     return this.service.create(dto);
