@@ -42,6 +42,13 @@ export class PlatformShopsService {
     return { data, total, page, pageSize };
   }
 
+  findAllForSelect() {
+    return this.prisma.shop.findMany({
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, isActive: true },
+    });
+  }
+
   async findOne(id: string) {
     const shop = await this.prisma.shop.findUnique({
       where: { id },

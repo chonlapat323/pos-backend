@@ -30,6 +30,11 @@ export class PlatformShopsController {
     return this.platformShopsService.dashboard();
   }
 
+  @Get('select')
+  findAllForSelect() {
+    return this.platformShopsService.findAllForSelect();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.platformShopsService.findOne(id);
