@@ -5,11 +5,23 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
+import { QueryMemberDto } from '../members/dto/query-member.dto';
 import { UpdateShopDto } from '../shop/dto/update-shop.dto';
+import { QueryStaffDto } from '../staff/dto/query-staff.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePlatformShopDto } from './dto/create-shop.dto';
 import { QueryPlatformShopDto } from './dto/query-shop.dto';
 import { UpdateShopStatusDto } from './dto/update-shop-status.dto';
+
+const STAFF_SAFE_SELECT = {
+  id: true,
+  name: true,
+  email: true,
+  phone: true,
+  role: true,
+  isActive: true,
+  createdAt: true,
+};
 
 function startOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
@@ -116,6 +128,97 @@ export class PlatformShopsService {
       where: { id },
       data: { isActive: dto.isActive },
     });
+  }
+
+  async dashboard() {
+    const [totalShops, activeShops, totalMembers, totalStaff, revenue] =
+      await Promise.all([
+        this.prisma.shop.count(),
+        this.prisma.shop.count({ where: { isActive: true } }),
+        this.prisma.member.count(),
+        this.prisma.staffUser.count(),
+        this.prisma.bill.aggregate({
+          where: {
+            status: 'PAID',
+            createdAt: { gte: startOfMonth(new Date()) },
+          },
+          _sum: { total: true },
+        }),
+      ]);
+
+    return {
+      totalShops,
+      activeShops,
+      suspendedShops: totalShops - activeShops,
+      totalMembers,
+      totalStaff,
+      revenueThisMonth: Number(revenue._sum.total ?? 0),
+    };
+  }
+
+  async findMembers(
+    shopId: string,
+    query: QueryMemberDto,
+  ): Promise<PaginatedResult<unknown>> {
+    await this.assertExists(shopId);
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 20;
+    const where = {
+      shopId,
+      ...(query.search
+        ? {
+            OR: [
+              { phone: { contains: query.search } },
+              { name: { contains: query.search, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.member.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.member.count({ where }),
+    ]);
+
+    return { data, total, page, pageSize };
+  }
+
+  async findStaff(
+    shopId: string,
+    query: QueryStaffDto,
+  ): Promise<PaginatedResult<unknown>> {
+    await this.assertExists(shopId);
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 20;
+    const where = {
+      shopId,
+      ...(query.search
+        ? {
+            OR: [
+              { name: { contains: query.search, mode: 'insensitive' as const } },
+              { email: { contains: query.search, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.staffUser.findMany({
+        where,
+        select: STAFF_SAFE_SELECT,
+        orderBy: { createdAt: 'asc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.staffUser.count({ where }),
+    ]);
+
+    return { data, total, page, pageSize };
   }
 
   private async assertExists(id: string) {

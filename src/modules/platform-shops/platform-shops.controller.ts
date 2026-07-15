@@ -8,8 +8,10 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { QueryMemberDto } from '../members/dto/query-member.dto';
 import { PlatformJwtAuthGuard } from '../platform-auth/platform-jwt-auth.guard';
 import { UpdateShopDto } from '../shop/dto/update-shop.dto';
+import { QueryStaffDto } from '../staff/dto/query-staff.dto';
 import { CreatePlatformShopDto } from './dto/create-shop.dto';
 import { QueryPlatformShopDto } from './dto/query-shop.dto';
 import { UpdateShopStatusDto } from './dto/update-shop-status.dto';
@@ -25,9 +27,24 @@ export class PlatformShopsController {
     return this.platformShopsService.findAll(query);
   }
 
+  @Get('dashboard')
+  dashboard() {
+    return this.platformShopsService.dashboard();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.platformShopsService.findOne(id);
+  }
+
+  @Get(':id/members')
+  findMembers(@Param('id') id: string, @Query() query: QueryMemberDto) {
+    return this.platformShopsService.findMembers(id, query);
+  }
+
+  @Get(':id/staff')
+  findStaff(@Param('id') id: string, @Query() query: QueryStaffDto) {
+    return this.platformShopsService.findStaff(id, query);
   }
 
   @Post()
