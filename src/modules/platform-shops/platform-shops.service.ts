@@ -8,11 +8,36 @@ import { PaginatedResult } from '../../common/interfaces/paginated-result.interf
 import { UpdateShopDto } from '../shop/dto/update-shop.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePlatformShopDto } from './dto/create-shop.dto';
+import { DashboardPeriod, QueryDashboardDto } from './dto/query-dashboard.dto';
 import { QueryPlatformShopDto } from './dto/query-shop.dto';
 import { UpdateShopStatusDto } from './dto/update-shop-status.dto';
 
 function startOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function startOfWeek(date: Date) {
+  const day = startOfDay(date);
+  const diff = (day.getDay() + 6) % 7; // Monday as start of week
+  day.setDate(day.getDate() - diff);
+  return day;
+}
+
+function sinceForPeriod(period: DashboardPeriod | undefined, now: Date): Date | undefined {
+  switch (period) {
+    case 'today':
+      return startOfDay(now);
+    case 'week':
+      return startOfWeek(now);
+    case 'all':
+      return undefined;
+    default:
+      return startOfMonth(now);
+  }
 }
 
 @Injectable()
@@ -125,20 +150,24 @@ export class PlatformShopsService {
     });
   }
 
-  async dashboard() {
+  async dashboard(query: QueryDashboardDto) {
+    const shopWhere = query.shopId ? { id: query.shopId } : {};
+    const memberWhere = query.shopId ? { shopId: query.shopId } : {};
+    const staffWhere = query.shopId ? { shopId: query.shopId } : {};
+    const since = sinceForPeriod(query.period, new Date());
+    const billWhere = {
+      status: 'PAID' as const,
+      ...(query.shopId ? { shopId: query.shopId } : {}),
+      ...(since ? { createdAt: { gte: since } } : {}),
+    };
+
     const [totalShops, activeShops, totalMembers, totalStaff, revenue] =
       await Promise.all([
-        this.prisma.shop.count(),
-        this.prisma.shop.count({ where: { isActive: true } }),
-        this.prisma.member.count(),
-        this.prisma.staffUser.count(),
-        this.prisma.bill.aggregate({
-          where: {
-            status: 'PAID',
-            createdAt: { gte: startOfMonth(new Date()) },
-          },
-          _sum: { total: true },
-        }),
+        this.prisma.shop.count({ where: shopWhere }),
+        this.prisma.shop.count({ where: { ...shopWhere, isActive: true } }),
+        this.prisma.member.count({ where: memberWhere }),
+        this.prisma.staffUser.count({ where: staffWhere }),
+        this.prisma.bill.aggregate({ where: billWhere, _sum: { total: true } }),
       ]);
 
     return {
@@ -147,7 +176,8 @@ export class PlatformShopsService {
       suspendedShops: totalShops - activeShops,
       totalMembers,
       totalStaff,
-      revenueThisMonth: Number(revenue._sum.total ?? 0),
+      revenue: Number(revenue._sum.total ?? 0),
+      period: query.period ?? 'month',
     };
   }
 

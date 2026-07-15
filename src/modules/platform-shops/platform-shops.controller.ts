@@ -11,6 +11,7 @@ import {
 import { PlatformJwtAuthGuard } from '../platform-auth/platform-jwt-auth.guard';
 import { UpdateShopDto } from '../shop/dto/update-shop.dto';
 import { CreatePlatformShopDto } from './dto/create-shop.dto';
+import { QueryDashboardDto } from './dto/query-dashboard.dto';
 import { QueryPlatformShopDto } from './dto/query-shop.dto';
 import { UpdateShopStatusDto } from './dto/update-shop-status.dto';
 import { PlatformShopsService } from './platform-shops.service';
@@ -26,8 +27,8 @@ export class PlatformShopsController {
   }
 
   @Get('dashboard')
-  dashboard() {
-    return this.platformShopsService.dashboard();
+  dashboard(@Query() query: QueryDashboardDto) {
+    return this.platformShopsService.dashboard(query);
   }
 
   @Get('select')
