@@ -13,6 +13,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { CurrentUserPayload } from '../auth/types';
 import { CreateMemberDto } from './dto/create-member.dto';
+import { QueryMemberDto } from './dto/query-member.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { MembersService } from './members.service';
 
@@ -24,9 +25,9 @@ export class MembersController {
   @Get()
   findAll(
     @CurrentUser() user: CurrentUserPayload,
-    @Query('search') search?: string,
+    @Query() query: QueryMemberDto,
   ) {
-    return this.membersService.findAll(user.shopId, search);
+    return this.membersService.findAll(user.shopId, query);
   }
 
   @Get(':id')

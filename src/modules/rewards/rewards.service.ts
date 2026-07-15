@@ -3,19 +3,40 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRewardDto } from './dto/create-reward.dto';
+import { QueryRewardDto } from './dto/query-reward.dto';
 import { UpdateRewardDto } from './dto/update-reward.dto';
 
 @Injectable()
 export class RewardsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(shopId: string) {
-    return this.prisma.reward.findMany({
-      where: { shopId },
-      orderBy: { pointCost: 'asc' },
-    });
+  async findAll(
+    shopId: string,
+    query: QueryRewardDto,
+  ): Promise<PaginatedResult<unknown>> {
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 20;
+    const where = {
+      shopId,
+      ...(query.search
+        ? { name: { contains: query.search, mode: 'insensitive' as const } }
+        : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.reward.findMany({
+        where,
+        orderBy: { pointCost: 'asc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.reward.count({ where }),
+    ]);
+
+    return { data, total, page, pageSize };
   }
 
   async findOne(shopId: string, id: string) {

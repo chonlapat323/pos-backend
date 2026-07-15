@@ -7,12 +7,14 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { CurrentUserPayload } from '../auth/types';
 import { CreateStaffDto } from './dto/create-staff.dto';
+import { QueryStaffDto } from './dto/query-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
 import { StaffService } from './staff.service';
 
@@ -30,8 +32,11 @@ export class StaffController {
   constructor(private readonly staffService: StaffService) {}
 
   @Get()
-  findAll(@CurrentUser() user: CurrentUserPayload) {
-    return this.staffService.findAll(user.shopId);
+  findAll(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: QueryStaffDto,
+  ) {
+    return this.staffService.findAll(user.shopId, query);
   }
 
   @Get(':id')

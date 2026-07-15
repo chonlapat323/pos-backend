@@ -3,29 +3,47 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMemberDto } from './dto/create-member.dto';
+import { QueryMemberDto } from './dto/query-member.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
 
 @Injectable()
 export class MembersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(shopId: string, search?: string) {
-    return this.prisma.member.findMany({
-      where: {
-        shopId,
-        ...(search
-          ? {
-              OR: [
-                { phone: { contains: search } },
-                { name: { contains: search, mode: 'insensitive' as const } },
-              ],
-            }
-          : {}),
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAll(
+    shopId: string,
+    query: QueryMemberDto,
+  ): Promise<PaginatedResult<unknown>> {
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 20;
+    const where = {
+      shopId,
+      ...(query.search
+        ? {
+            OR: [
+              { phone: { contains: query.search } },
+              {
+                name: { contains: query.search, mode: 'insensitive' as const },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.member.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.member.count({ where }),
+    ]);
+
+    return { data, total, page, pageSize };
   }
 
   async findOne(shopId: string, id: string) {

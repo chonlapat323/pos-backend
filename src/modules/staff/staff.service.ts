@@ -4,8 +4,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
+import { QueryStaffDto } from './dto/query-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
 
 const SAFE_SELECT = {
@@ -23,12 +25,40 @@ const SAFE_SELECT = {
 export class StaffService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(shopId: string) {
-    return this.prisma.staffUser.findMany({
-      where: { shopId },
-      select: SAFE_SELECT,
-      orderBy: { createdAt: 'asc' },
-    });
+  async findAll(
+    shopId: string,
+    query: QueryStaffDto,
+  ): Promise<PaginatedResult<unknown>> {
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 20;
+    const where = {
+      shopId,
+      ...(query.search
+        ? {
+            OR: [
+              {
+                name: { contains: query.search, mode: 'insensitive' as const },
+              },
+              {
+                email: { contains: query.search, mode: 'insensitive' as const },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.staffUser.findMany({
+        where,
+        select: SAFE_SELECT,
+        orderBy: { createdAt: 'asc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.staffUser.count({ where }),
+    ]);
+
+    return { data, total, page, pageSize };
   }
 
   async findOne(shopId: string, id: string) {

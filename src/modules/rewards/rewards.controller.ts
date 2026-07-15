@@ -6,12 +6,14 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { CurrentUserPayload } from '../auth/types';
 import { CreateRewardDto } from './dto/create-reward.dto';
+import { QueryRewardDto } from './dto/query-reward.dto';
 import { RedeemRewardDto } from './dto/redeem-reward.dto';
 import { UpdateRewardDto } from './dto/update-reward.dto';
 import { RewardsService } from './rewards.service';
@@ -22,8 +24,11 @@ export class RewardsController {
   constructor(private readonly rewardsService: RewardsService) {}
 
   @Get()
-  findAll(@CurrentUser() user: CurrentUserPayload) {
-    return this.rewardsService.findAll(user.shopId);
+  findAll(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: QueryRewardDto,
+  ) {
+    return this.rewardsService.findAll(user.shopId, query);
   }
 
   @Get(':id')
