@@ -4,3 +4,7 @@ dist
 .env
 
 /generated/prisma
+
+# Uploaded files (local disk storage, dev only)
+/uploads/*
+!/uploads/.gitkeep

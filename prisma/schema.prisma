@@ -254,8 +254,8 @@ model VisitPhoto {
   id       String    @id @default(cuid())
   shopId   String
   shop     Shop      @relation(fields: [shopId], references: [id])
-  billId   String
-  bill     Bill      @relation(fields: [billId], references: [id], onDelete: Cascade)
+  billId   String?
+  bill     Bill?     @relation(fields: [billId], references: [id], onDelete: Cascade)
   memberId String
   member   Member    @relation(fields: [memberId], references: [id])
   type     PhotoType

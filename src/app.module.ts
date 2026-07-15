@@ -16,6 +16,8 @@ import { ServiceCategoriesModule } from './modules/service-categories/service-ca
 import { ServicesModule } from './modules/services/services.module';
 import { ShopModule } from './modules/shop/shop.module';
 import { StaffModule } from './modules/staff/staff.module';
+import { UploadsModule } from './modules/uploads/uploads.module';
+import { VisitPhotosModule } from './modules/visit-photos/visit-photos.module';
 
 @Module({
   imports: [
@@ -37,6 +39,8 @@ import { StaffModule } from './modules/staff/staff.module';
     PlatformAuthModule,
     PlatformShopsModule,
     PlatformManagementModule,
+    UploadsModule,
+    VisitPhotosModule,
   ],
   controllers: [AppController],
   providers: [AppService],
