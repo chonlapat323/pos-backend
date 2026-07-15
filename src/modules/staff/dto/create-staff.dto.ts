@@ -29,4 +29,8 @@ export class CreateStaffDto {
   @IsOptional()
   @IsEnum(StaffRole)
   role?: StaffRole;
+
+  @IsOptional()
+  @IsString()
+  roleId?: string;
 }

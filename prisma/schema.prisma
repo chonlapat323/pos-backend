@@ -51,9 +51,34 @@ model PlatformAdmin {
   email        String   @unique
   passwordHash String
   name         String
+  isSuperAdmin Boolean  @default(false)
+  roleId       String?
+  roleRef      Role?    @relation(fields: [roleId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum RoleScope {
+  SHOP
+  PLATFORM
+}
+
+model Role {
+  id          String    @id @default(cuid())
+  name        String
+  scope       RoleScope
+  shopId      String?
+  shop        Shop?     @relation(fields: [shopId], references: [id])
+  permissions String[]
+
+  staff          StaffUser[]
+  platformAdmins PlatformAdmin[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([shopId, name])
 }
 
 model Shop {
@@ -77,6 +102,7 @@ model Shop {
   bills             Bill[]
   pointTransactions PointTransaction[]
   visitPhotos       VisitPhoto[]
+  roles             Role[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -92,6 +118,8 @@ model StaffUser {
   passwordHash String?
   pinCode      String?
   role         StaffRole @default(STAFF)
+  roleId       String?
+  roleRef      Role?     @relation(fields: [roleId], references: [id], onDelete: SetNull)
   isActive     Boolean   @default(true)
   bills        Bill[]
 

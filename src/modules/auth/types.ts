@@ -12,4 +12,5 @@ export interface CurrentUserPayload {
   shopId: string;
   role: StaffRole;
   name: string;
+  permissions: string[];
 }

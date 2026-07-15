@@ -16,6 +16,8 @@ const SAFE_SELECT = {
   email: true,
   phone: true,
   role: true,
+  roleId: true,
+  roleRef: { select: { id: true, name: true } },
   isActive: true,
   createdAt: true,
   updatedAt: true,

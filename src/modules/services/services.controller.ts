@@ -9,6 +9,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { CurrentUserPayload } from '../auth/types';
@@ -17,7 +19,7 @@ import { QueryServiceDto } from './dto/query-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { ServicesService } from './services.service';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('services')
 export class ServicesController {
   constructor(private readonly servicesService: ServicesService) {}
@@ -36,6 +38,7 @@ export class ServicesController {
   }
 
   @Post()
+  @RequirePermission('shop.services.manage')
   create(
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateServiceDto,
@@ -44,6 +47,7 @@ export class ServicesController {
   }
 
   @Patch(':id')
+  @RequirePermission('shop.services.manage')
   update(
     @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
@@ -53,6 +57,7 @@ export class ServicesController {
   }
 
   @Delete(':id')
+  @RequirePermission('shop.services.manage')
   remove(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string) {
     return this.servicesService.remove(user.shopId, id);
   }

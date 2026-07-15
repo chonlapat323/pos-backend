@@ -7,4 +7,6 @@ export interface PlatformJwtPayload {
 export interface CurrentPlatformAdminPayload {
   id: string;
   name: string;
+  permissions: string[];
+  isSuperAdmin: boolean;
 }

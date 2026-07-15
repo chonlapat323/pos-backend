@@ -9,6 +9,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { CurrentUserPayload } from '../auth/types';
@@ -18,7 +20,7 @@ import { RedeemRewardDto } from './dto/redeem-reward.dto';
 import { UpdateRewardDto } from './dto/update-reward.dto';
 import { RewardsService } from './rewards.service';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('rewards')
 export class RewardsController {
   constructor(private readonly rewardsService: RewardsService) {}
@@ -37,6 +39,7 @@ export class RewardsController {
   }
 
   @Post()
+  @RequirePermission('shop.rewards.manage')
   create(
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateRewardDto,
@@ -45,6 +48,7 @@ export class RewardsController {
   }
 
   @Patch(':id')
+  @RequirePermission('shop.rewards.manage')
   update(
     @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
@@ -54,6 +58,7 @@ export class RewardsController {
   }
 
   @Delete(':id')
+  @RequirePermission('shop.rewards.manage')
   remove(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string) {
     return this.rewardsService.remove(user.shopId, id);
   }

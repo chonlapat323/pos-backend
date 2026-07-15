@@ -8,6 +8,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { RequirePlatformPermission } from '../../common/decorators/require-permission.decorator';
+import { PlatformPermissionsGuard } from '../../common/guards/platform-permissions.guard';
 import { PlatformJwtAuthGuard } from '../platform-auth/platform-jwt-auth.guard';
 import { UpdateShopDto } from '../shop/dto/update-shop.dto';
 import { CreatePlatformShopDto } from './dto/create-shop.dto';
@@ -16,7 +18,7 @@ import { QueryPlatformShopDto } from './dto/query-shop.dto';
 import { UpdateShopStatusDto } from './dto/update-shop-status.dto';
 import { PlatformShopsService } from './platform-shops.service';
 
-@UseGuards(PlatformJwtAuthGuard)
+@UseGuards(PlatformJwtAuthGuard, PlatformPermissionsGuard)
 @Controller('platform/shops')
 export class PlatformShopsController {
   constructor(private readonly platformShopsService: PlatformShopsService) {}
@@ -27,6 +29,7 @@ export class PlatformShopsController {
   }
 
   @Get('dashboard')
+  @RequirePlatformPermission('platform.dashboard.view')
   dashboard(@Query() query: QueryDashboardDto) {
     return this.platformShopsService.dashboard(query);
   }
@@ -42,16 +45,19 @@ export class PlatformShopsController {
   }
 
   @Post()
+  @RequirePlatformPermission('platform.shops.manage')
   create(@Body() dto: CreatePlatformShopDto) {
     return this.platformShopsService.create(dto);
   }
 
   @Patch(':id')
+  @RequirePlatformPermission('platform.shops.manage')
   update(@Param('id') id: string, @Body() dto: UpdateShopDto) {
     return this.platformShopsService.update(id, dto);
   }
 
   @Patch(':id/status')
+  @RequirePlatformPermission('platform.shops.manage')
   updateStatus(@Param('id') id: string, @Body() dto: UpdateShopStatusDto) {
     return this.platformShopsService.updateStatus(id, dto);
   }

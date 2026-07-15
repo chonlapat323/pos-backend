@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Delete,
-  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -10,6 +9,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { CurrentUserPayload } from '../auth/types';
@@ -18,15 +19,7 @@ import { QueryStaffDto } from './dto/query-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
 import { StaffService } from './staff.service';
 
-function assertOwner(user: CurrentUserPayload) {
-  if (user.role !== 'OWNER') {
-    throw new ForbiddenException(
-      'Only the shop owner can manage staff accounts',
-    );
-  }
-}
-
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('staff')
 export class StaffController {
   constructor(private readonly staffService: StaffService) {}
@@ -45,24 +38,24 @@ export class StaffController {
   }
 
   @Post()
+  @RequirePermission('shop.staff.manage')
   create(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateStaffDto) {
-    assertOwner(user);
     return this.staffService.create(user.shopId, dto);
   }
 
   @Patch(':id')
+  @RequirePermission('shop.staff.manage')
   update(
     @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
     @Body() dto: UpdateStaffDto,
   ) {
-    assertOwner(user);
     return this.staffService.update(user.shopId, id, dto);
   }
 
   @Delete(':id')
+  @RequirePermission('shop.staff.manage')
   remove(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string) {
-    assertOwner(user);
     return this.staffService.remove(user.shopId, id);
   }
 }

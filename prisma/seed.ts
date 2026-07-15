@@ -37,11 +37,12 @@ async function main() {
   const platformPasswordHash = await bcrypt.hash('platform1234', 10);
   const platformAdmin = await prisma.platformAdmin.upsert({
     where: { email: 'platform@possystem.local' },
-    update: {},
+    update: { isSuperAdmin: true },
     create: {
       name: 'Platform Admin',
       email: 'platform@possystem.local',
       passwordHash: platformPasswordHash,
+      isSuperAdmin: true,
     },
   });
 

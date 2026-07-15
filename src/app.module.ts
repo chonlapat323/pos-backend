@@ -11,6 +11,7 @@ import { PlatformShopsModule } from './modules/platform-shops/platform-shops.mod
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { RewardsModule } from './modules/rewards/rewards.module';
+import { RolesModule } from './modules/roles/roles.module';
 import { ServiceCategoriesModule } from './modules/service-categories/service-categories.module';
 import { ServicesModule } from './modules/services/services.module';
 import { ShopModule } from './modules/shop/shop.module';
@@ -29,6 +30,7 @@ import { StaffModule } from './modules/staff/staff.module';
     ServicesModule,
     MembersModule,
     RewardsModule,
+    RolesModule,
     StaffModule,
     BillsModule,
     ReportsModule,

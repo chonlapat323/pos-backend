@@ -19,11 +19,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload): Promise<CurrentUserPayload> {
-    const shop = await this.prisma.shop.findUnique({
-      where: { id: payload.shopId },
-      select: { isActive: true },
+    const staff = await this.prisma.staffUser.findUnique({
+      where: { id: payload.sub },
+      select: {
+        shop: { select: { isActive: true } },
+        roleRef: { select: { permissions: true } },
+      },
     });
-    if (!shop || !shop.isActive) {
+    if (!staff || !staff.shop.isActive) {
       throw new UnauthorizedException('This shop has been suspended');
     }
 
@@ -32,6 +35,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       shopId: payload.shopId,
       role: payload.role,
       name: payload.name,
+      permissions: staff.roleRef?.permissions ?? [],
     };
   }
 }

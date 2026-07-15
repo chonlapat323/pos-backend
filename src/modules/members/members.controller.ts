@@ -9,6 +9,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { CurrentUserPayload } from '../auth/types';
@@ -17,7 +19,7 @@ import { QueryMemberDto } from './dto/query-member.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { MembersService } from './members.service';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('members')
 export class MembersController {
   constructor(private readonly membersService: MembersService) {}
@@ -36,6 +38,7 @@ export class MembersController {
   }
 
   @Post()
+  @RequirePermission('shop.members.manage')
   create(
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateMemberDto,
@@ -44,6 +47,7 @@ export class MembersController {
   }
 
   @Patch(':id')
+  @RequirePermission('shop.members.manage')
   update(
     @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
@@ -53,6 +57,7 @@ export class MembersController {
   }
 
   @Delete(':id')
+  @RequirePermission('shop.members.manage')
   remove(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string) {
     return this.membersService.remove(user.shopId, id);
   }
