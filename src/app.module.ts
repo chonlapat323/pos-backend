@@ -6,6 +6,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { BillsModule } from './modules/bills/bills.module';
 import { MembersModule } from './modules/members/members.module';
 import { PlatformAuthModule } from './modules/platform-auth/platform-auth.module';
+import { PlatformManagementModule } from './modules/platform-management/platform-management.module';
 import { PlatformShopsModule } from './modules/platform-shops/platform-shops.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { ReportsModule } from './modules/reports/reports.module';
@@ -33,6 +34,7 @@ import { StaffModule } from './modules/staff/staff.module';
     ReportsModule,
     PlatformAuthModule,
     PlatformShopsModule,
+    PlatformManagementModule,
   ],
   controllers: [AppController],
   providers: [AppService],
