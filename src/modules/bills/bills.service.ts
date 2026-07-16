@@ -4,23 +4,58 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { Member } from '@prisma/client';
+import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBillDto } from './dto/create-bill.dto';
+import { QueryBillDto } from './dto/query-bill.dto';
 
 @Injectable()
 export class BillsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(shopId: string) {
-    return this.prisma.bill.findMany({
-      where: { shopId },
-      include: {
-        member: true,
-        staff: { select: { id: true, name: true } },
-        items: { include: { service: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAll(
+    shopId: string,
+    query: QueryBillDto,
+  ): Promise<PaginatedResult<unknown>> {
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 20;
+    const where = {
+      shopId,
+      ...(query.search
+        ? {
+            OR: [
+              { member: { name: { contains: query.search, mode: 'insensitive' as const } } },
+              { member: { phone: { contains: query.search } } },
+              { staff: { name: { contains: query.search, mode: 'insensitive' as const } } },
+            ],
+          }
+        : {}),
+      ...(query.dateFrom || query.dateTo
+        ? {
+            createdAt: {
+              ...(query.dateFrom ? { gte: new Date(`${query.dateFrom}T00:00:00.000Z`) } : {}),
+              ...(query.dateTo ? { lte: new Date(`${query.dateTo}T23:59:59.999Z`) } : {}),
+            },
+          }
+        : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.bill.findMany({
+        where,
+        include: {
+          member: true,
+          staff: { select: { id: true, name: true } },
+          items: { include: { service: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.bill.count({ where }),
+    ]);
+
+    return { data, total, page, pageSize };
   }
 
   async findOne(shopId: string, id: string) {
