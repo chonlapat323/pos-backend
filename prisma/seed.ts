@@ -180,55 +180,18 @@ async function main() {
   // same pattern as the platform roles above.
 
   // No real photos exist for demo data, and shops won't always have uploaded one for every
-  // service/category either - rather than leaving imageUrl null (client renders a computed CSS
-  // placeholder) or pointing at a third-party image service (network dependency, wrong for a
-  // kiosk), generate a small labeled SVG and store it inline as a data: URI - a real, self-contained
-  // "photo" that lives in our own data, no filesystem/network involved.
-  function hueFromId(id: string): number {
-    let hash = 0;
-    for (let i = 0; i < id.length; i++) {
-      hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
-    }
-    return hash % 360;
-  }
-
-  function escapeXml(text: string): string {
-    return text.replace(
-      /[&<>"']/g,
-      (c) =>
-        ({
-          '&': '&amp;',
-          '<': '&lt;',
-          '>': '&gt;',
-          '"': '&quot;',
-          "'": '&apos;',
-        })[c] as string,
-    );
-  }
-
+  // service/category either - use a stable mock photo (picsum, seeded by name so it doesn't
+  // reshuffle on re-seed) instead of leaving imageUrl null.
   function placeholderImage(
     seed: string,
-    label: string,
     width: number,
     height: number,
   ): string {
-    const hue = hueFromId(seed);
-    const fontSize = Math.round(width / 13);
-    const svg =
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">` +
-      `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">` +
-      `<stop offset="0%" stop-color="hsl(${hue}, 45%, 34%)"/>` +
-      `<stop offset="100%" stop-color="hsl(${hue}, 40%, 20%)"/>` +
-      `</linearGradient></defs>` +
-      `<rect width="100%" height="100%" fill="url(#g)"/>` +
-      `<text x="50%" y="50%" font-family="sans-serif" font-size="${fontSize}" font-weight="600" ` +
-      `fill="rgba(255,255,255,0.55)" text-anchor="middle" dominant-baseline="central">${escapeXml(label)}</text>` +
-      `</svg>`;
-    return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+    return `https://picsum.photos/seed/${encodeURIComponent(seed)}/${width}/${height}`;
   }
 
   async function upsertCategory(name: string, sortOrder: number) {
-    const imageUrl = placeholderImage(name, name, 240, 240);
+    const imageUrl = placeholderImage(name, 240, 240);
     const existing = await prisma.serviceCategory.findFirst({
       where: { shopId: shop.id, name },
     });
@@ -264,7 +227,7 @@ async function main() {
       durationMinutes: data.durationMinutes,
       description: data.description,
       status: data.status ?? 'ACTIVE',
-      imageUrl: placeholderImage(`${categoryId}:${name}`, name, 480, 270),
+      imageUrl: placeholderImage(`${categoryId}:${name}`, 480, 270),
     };
     if (existing) {
       return prisma.service.update({
