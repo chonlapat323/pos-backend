@@ -156,6 +156,85 @@ async function main() {
     supportRole.name,
     ')',
   );
+
+  // --- Service categories + services (demo catalog for the POS screen) ---
+  // ServiceCategory/Service have no unique key besides id, so upsert-by-name via find-then-create/update,
+  // same pattern as the platform roles above.
+  async function upsertCategory(name: string, sortOrder: number) {
+    const existing = await prisma.serviceCategory.findFirst({ where: { shopId: shop.id, name } });
+    if (existing) {
+      return prisma.serviceCategory.update({ where: { id: existing.id }, data: { sortOrder } });
+    }
+    return prisma.serviceCategory.create({ data: { shopId: shop.id, name, sortOrder } });
+  }
+
+  async function upsertService(
+    categoryId: string,
+    name: string,
+    data: { price: number; durationMinutes: number; description?: string; status?: 'ACTIVE' | 'INACTIVE' | 'PROMOTION' },
+  ) {
+    const existing = await prisma.service.findFirst({ where: { shopId: shop.id, categoryId, name } });
+    const payload = {
+      shopId: shop.id,
+      categoryId,
+      name,
+      price: data.price,
+      durationMinutes: data.durationMinutes,
+      description: data.description,
+      status: data.status ?? 'ACTIVE',
+    };
+    if (existing) {
+      return prisma.service.update({ where: { id: existing.id }, data: payload });
+    }
+    return prisma.service.create({ data: payload });
+  }
+
+  const nailCategory = await upsertCategory('ทำเล็บ', 1);
+  const hairCategory = await upsertCategory('ทำผม', 2);
+  const waxCategory = await upsertCategory('แว็กซ์', 3);
+
+  await upsertService(nailCategory.id, 'เจลสีเรียบ', {
+    price: 350,
+    durationMinutes: 45,
+    description: 'ทาเจลสีเรียบทั้งมือ พร้อมตะไบและเล็มหนัง',
+  });
+  await upsertService(nailCategory.id, 'เจลเพ้นท์ลาย', {
+    price: 550,
+    durationMinutes: 60,
+    description: 'เพ้นท์ลายตามแบบ พร้อมเจลสีพื้น',
+    status: 'PROMOTION',
+  });
+  await upsertService(nailCategory.id, 'ต่อเล็บอะคริลิค', {
+    price: 650,
+    durationMinutes: 90,
+    description: 'ต่อเล็บอะคริลิคทรงตามต้องการ',
+  });
+  await upsertService(nailCategory.id, 'ทำเล็บเท้า', { price: 400, durationMinutes: 45 });
+  await upsertService(nailCategory.id, 'ต่อเล็บพลาสวูด (เลิกให้บริการ)', {
+    price: 300,
+    durationMinutes: 60,
+    status: 'INACTIVE',
+  });
+
+  await upsertService(hairCategory.id, 'สระ + ไดร์', { price: 250, durationMinutes: 30 });
+  await upsertService(hairCategory.id, 'ตัดผม', { price: 300, durationMinutes: 45 });
+  await upsertService(hairCategory.id, 'ทำสีผม', {
+    price: 1200,
+    durationMinutes: 120,
+    description: 'รวมยาสระและทรีทเมนต์บำรุงสี',
+  });
+  await upsertService(hairCategory.id, 'ยืดผม', {
+    price: 1500,
+    durationMinutes: 150,
+    description: 'ยืดผมด้วยเคราติน ผมตรงลื่นเงางาม',
+    status: 'PROMOTION',
+  });
+
+  await upsertService(waxCategory.id, 'แว็กซ์รักแร้', { price: 200, durationMinutes: 20 });
+  await upsertService(waxCategory.id, 'แว็กซ์ขา', { price: 450, durationMinutes: 40 });
+  await upsertService(waxCategory.id, 'แว็กซ์คิ้ว', { price: 150, durationMinutes: 15 });
+
+  console.log('Seeded categories:', nailCategory.name, '/', hairCategory.name, '/', waxCategory.name);
 }
 
 main()
