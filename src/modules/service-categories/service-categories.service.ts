@@ -38,7 +38,7 @@ export class ServiceCategoriesService {
 
   findAllForSelect(shopId: string) {
     return this.prisma.serviceCategory.findMany({
-      where: { shopId },
+      where: { shopId, isHidden: false },
       orderBy: { sortOrder: 'asc' },
       select: { id: true, name: true, imageUrl: true },
     });
