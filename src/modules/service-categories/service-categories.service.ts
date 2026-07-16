@@ -40,7 +40,7 @@ export class ServiceCategoriesService {
     return this.prisma.serviceCategory.findMany({
       where: { shopId },
       orderBy: { sortOrder: 'asc' },
-      select: { id: true, name: true },
+      select: { id: true, name: true, imageUrl: true },
     });
   }
 
