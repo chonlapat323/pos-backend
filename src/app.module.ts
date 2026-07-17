@@ -4,6 +4,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { BillsModule } from './modules/bills/bills.module';
+import { CustomerAuthModule } from './modules/customer-auth/customer-auth.module';
+import { CustomerCatalogModule } from './modules/customer-catalog/customer-catalog.module';
+import { CustomerPortalModule } from './modules/customer-portal/customer-portal.module';
 import { MembersModule } from './modules/members/members.module';
 import { PlatformAuthModule } from './modules/platform-auth/platform-auth.module';
 import { PlatformManagementModule } from './modules/platform-management/platform-management.module';
@@ -41,6 +44,9 @@ import { VisitPhotosModule } from './modules/visit-photos/visit-photos.module';
     PlatformManagementModule,
     UploadsModule,
     VisitPhotosModule,
+    CustomerAuthModule,
+    CustomerCatalogModule,
+    CustomerPortalModule,
   ],
   controllers: [AppController],
   providers: [AppService],
