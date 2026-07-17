@@ -34,4 +34,9 @@ export class UpdateShopDto {
   @IsInt()
   @Min(1)
   bahtPerPoint?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  signupBonusPoints?: number;
 }

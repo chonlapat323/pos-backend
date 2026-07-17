@@ -23,6 +23,7 @@ export class CustomerCatalogService {
         openTime: true,
         closeTime: true,
         bahtPerPoint: true,
+        signupBonusPoints: true,
       },
     });
     if (!shop) throw new NotFoundException('Shop not found');

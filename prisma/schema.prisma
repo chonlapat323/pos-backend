@@ -47,13 +47,13 @@ enum PhotoType {
 }
 
 model PlatformAdmin {
-  id           String   @id @default(cuid())
-  email        String   @unique
+  id           String  @id @default(cuid())
+  email        String  @unique
   passwordHash String
   name         String
-  isSuperAdmin Boolean  @default(false)
+  isSuperAdmin Boolean @default(false)
   roleId       String?
-  roleRef      Role?    @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  roleRef      Role?   @relation(fields: [roleId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -82,17 +82,18 @@ model Role {
 }
 
 model Shop {
-  id           String   @id @default(cuid())
-  name         String
-  slug         String   @unique
-  logoUrl      String?
-  address      String?
-  phone        String?
-  openTime     String?
-  closeTime    String?
-  shopType     ShopType @default(MULTI)
-  bahtPerPoint Int      @default(50)
-  isActive     Boolean  @default(true)
+  id                String   @id @default(cuid())
+  name              String
+  slug              String   @unique
+  logoUrl           String?
+  address           String?
+  phone             String?
+  openTime          String?
+  closeTime         String?
+  shopType          ShopType @default(MULTI)
+  bahtPerPoint      Int      @default(50)
+  signupBonusPoints Int      @default(50)
+  isActive          Boolean  @default(true)
 
   staff             StaffUser[]
   categories        ServiceCategory[]
