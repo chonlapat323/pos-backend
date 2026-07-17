@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreatePlatformShopDto } from './dto/create-shop.dto';
 import { DashboardPeriod, QueryDashboardDto } from './dto/query-dashboard.dto';
 import { QueryPlatformShopDto } from './dto/query-shop.dto';
+import { UpdateShopSlugDto } from './dto/update-shop-slug.dto';
 import { UpdateShopStatusDto } from './dto/update-shop-status.dto';
 
 function startOfMonth(date: Date) {
@@ -350,6 +351,22 @@ export class PlatformShopsService {
     return this.prisma.shop.update({
       where: { id },
       data: { isActive: dto.isActive },
+    });
+  }
+
+  async updateSlug(id: string, dto: UpdateShopSlugDto) {
+    await this.assertExists(id);
+
+    const existingSlug = await this.prisma.shop.findUnique({
+      where: { slug: dto.slug },
+    });
+    if (existingSlug && existingSlug.id !== id) {
+      throw new ConflictException('Shop slug already in use');
+    }
+
+    return this.prisma.shop.update({
+      where: { id },
+      data: { slug: dto.slug },
     });
   }
 

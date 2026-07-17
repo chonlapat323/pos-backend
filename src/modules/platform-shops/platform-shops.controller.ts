@@ -15,6 +15,7 @@ import { UpdateShopDto } from '../shop/dto/update-shop.dto';
 import { CreatePlatformShopDto } from './dto/create-shop.dto';
 import { QueryDashboardDto } from './dto/query-dashboard.dto';
 import { QueryPlatformShopDto } from './dto/query-shop.dto';
+import { UpdateShopSlugDto } from './dto/update-shop-slug.dto';
 import { UpdateShopStatusDto } from './dto/update-shop-status.dto';
 import { PlatformShopsService } from './platform-shops.service';
 
@@ -60,5 +61,11 @@ export class PlatformShopsController {
   @RequirePlatformPermission('platform.shops.manage')
   updateStatus(@Param('id') id: string, @Body() dto: UpdateShopStatusDto) {
     return this.platformShopsService.updateStatus(id, dto);
+  }
+
+  @Patch(':id/slug')
+  @RequirePlatformPermission('platform.shops.manage')
+  updateSlug(@Param('id') id: string, @Body() dto: UpdateShopSlugDto) {
+    return this.platformShopsService.updateSlug(id, dto);
   }
 }
