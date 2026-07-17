@@ -32,6 +32,7 @@ export class CustomerAuthService {
     const payload: CustomerJwtPayload = {
       sub: member.id,
       shopId: shop.id,
+      name: member.name,
       type: 'customer',
     };
 

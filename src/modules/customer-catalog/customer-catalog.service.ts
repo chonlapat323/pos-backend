@@ -17,7 +17,13 @@ export class CustomerCatalogService {
   async getShop(slug: string) {
     const shop = await this.prisma.shop.findFirst({
       where: { slug, isActive: true },
-      select: { name: true, logoUrl: true },
+      select: {
+        name: true,
+        logoUrl: true,
+        openTime: true,
+        closeTime: true,
+        bahtPerPoint: true,
+      },
     });
     if (!shop) throw new NotFoundException('Shop not found');
     return shop;

@@ -1,6 +1,7 @@
 export interface CustomerJwtPayload {
   sub: string;
   shopId: string;
+  name: string;
   type: 'customer';
 }
 

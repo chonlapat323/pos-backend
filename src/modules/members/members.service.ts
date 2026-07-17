@@ -54,7 +54,10 @@ export class MembersService {
         bills: {
           orderBy: { createdAt: 'desc' },
           take: 20,
-          include: { items: { include: { service: true } } },
+          include: {
+            items: { include: { service: true } },
+            staff: { select: { name: true } },
+          },
         },
         visitPhotos: { orderBy: { createdAt: 'desc' } },
       },
