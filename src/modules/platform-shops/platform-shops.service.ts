@@ -481,6 +481,59 @@ export class PlatformShopsService {
     });
   }
 
+  // Only the most recent subscription event can be cancelled - reversing an arbitrary older one
+  // would require unwinding every stacked renewal created after it, which isn't a scenario this
+  // covers. This is for the "shop owner bought the wrong thing by mistake" case, not a general
+  // undo history. Reverts the shop back to whatever its previous event's status/end date was.
+  async cancelLatestSubscription(shopId: string) {
+    await this.assertExists(shopId);
+
+    const latest = await this.prisma.shopSubscription.findFirst({
+      where: { shopId },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!latest) throw new NotFoundException('No subscription event to cancel');
+    if (latest.status === 'CANCELLED') {
+      throw new ConflictException(
+        'This subscription event is already cancelled',
+      );
+    }
+
+    const previous = await this.prisma.shopSubscription.findFirst({
+      where: {
+        shopId,
+        id: { not: latest.id },
+        status: { in: ['ACTIVE', 'TRIALING', 'EXPIRED'] },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.shopSubscription.update({
+        where: { id: latest.id },
+        data: { status: 'CANCELLED' },
+      });
+
+      return tx.shop.update({
+        where: { id: shopId },
+        data: previous
+          ? {
+              subscriptionStatus: previous.status,
+              subscriptionEndsAt: previous.endAt,
+              isActive: previous.status !== 'EXPIRED',
+              suspendReason:
+                previous.status === 'EXPIRED' ? 'SUBSCRIPTION_EXPIRED' : null,
+            }
+          : {
+              subscriptionStatus: 'EXPIRED',
+              subscriptionEndsAt: new Date(),
+              isActive: false,
+              suspendReason: 'MANUAL',
+            },
+      });
+    });
+  }
+
   async listSubscriptionEvents(
     query: QuerySubscriptionEventsDto,
   ): Promise<PaginatedResult<unknown>> {

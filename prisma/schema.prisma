@@ -57,6 +57,7 @@ enum SubscriptionStatus {
   TRIALING
   ACTIVE
   EXPIRED
+  CANCELLED
 }
 
 enum PaymentStatus {

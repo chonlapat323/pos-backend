@@ -91,4 +91,10 @@ export class PlatformShopsController {
   ) {
     return this.platformShopsService.grantSubscription(id, dto);
   }
+
+  @Post(':id/subscription/cancel')
+  @RequirePlatformPermission('platform.subscriptions.manage')
+  cancelLatestSubscription(@Param('id') id: string) {
+    return this.platformShopsService.cancelLatestSubscription(id);
+  }
 }
