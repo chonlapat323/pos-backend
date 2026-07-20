@@ -11,6 +11,7 @@ import { CreatePlatformShopDto } from './dto/create-shop.dto';
 import { GrantShopSubscriptionDto } from './dto/grant-shop-subscription.dto';
 import { DashboardPeriod, QueryDashboardDto } from './dto/query-dashboard.dto';
 import { QueryPlatformShopDto } from './dto/query-shop.dto';
+import { QuerySubscriptionEventsDto } from './dto/query-subscription-events.dto';
 import { UpdateShopSlugDto } from './dto/update-shop-slug.dto';
 import { UpdateShopStatusDto } from './dto/update-shop-status.dto';
 
@@ -464,6 +465,53 @@ export class PlatformShopsService {
         },
       });
     });
+  }
+
+  async listSubscriptionEvents(
+    query: QuerySubscriptionEventsDto,
+  ): Promise<PaginatedResult<unknown>> {
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 20;
+    const where = query.search
+      ? {
+          shop: {
+            name: { contains: query.search, mode: 'insensitive' as const },
+          },
+        }
+      : {};
+
+    const [rows, total] = await Promise.all([
+      this.prisma.shopSubscription.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          shop: { select: { id: true, name: true, slug: true } },
+          package: true,
+          payments: { orderBy: { createdAt: 'desc' }, take: 1 },
+        },
+      }),
+      this.prisma.shopSubscription.count({ where }),
+    ]);
+
+    // No dedicated audit-log table - derive what happened from the data already on hand:
+    // a trial package means the shop's trial started, a payment with no omiseChargeId means a
+    // platform admin manually granted/extended it, otherwise it's a real Omise-paid purchase.
+    const data = rows.map((row) => {
+      const payment = row.payments[0];
+      let eventType: 'TRIAL_STARTED' | 'PURCHASED' | 'ADMIN_GRANTED';
+      if (row.package.isTrial) {
+        eventType = 'TRIAL_STARTED';
+      } else if (payment && !payment.omiseChargeId) {
+        eventType = 'ADMIN_GRANTED';
+      } else {
+        eventType = 'PURCHASED';
+      }
+      return { ...row, eventType };
+    });
+
+    return { data, total, page, pageSize };
   }
 
   async dashboard(query: QueryDashboardDto) {

@@ -16,6 +16,7 @@ import { CreatePlatformShopDto } from './dto/create-shop.dto';
 import { GrantShopSubscriptionDto } from './dto/grant-shop-subscription.dto';
 import { QueryDashboardDto } from './dto/query-dashboard.dto';
 import { QueryPlatformShopDto } from './dto/query-shop.dto';
+import { QuerySubscriptionEventsDto } from './dto/query-subscription-events.dto';
 import { UpdateShopSlugDto } from './dto/update-shop-slug.dto';
 import { UpdateShopStatusDto } from './dto/update-shop-status.dto';
 import { PlatformShopsService } from './platform-shops.service';
@@ -39,6 +40,12 @@ export class PlatformShopsController {
   @Get('select')
   findAllForSelect() {
     return this.platformShopsService.findAllForSelect();
+  }
+
+  @Get('subscriptions')
+  @RequirePlatformPermission('platform.subscriptions.manage')
+  listSubscriptionEvents(@Query() query: QuerySubscriptionEventsDto) {
+    return this.platformShopsService.listSubscriptionEvents(query);
   }
 
   @Get(':id')
