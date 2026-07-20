@@ -8,6 +8,7 @@ import { PaginatedResult } from '../../common/interfaces/paginated-result.interf
 import { UpdateShopDto } from '../shop/dto/update-shop.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePlatformShopDto } from './dto/create-shop.dto';
+import { GrantShopSubscriptionDto } from './dto/grant-shop-subscription.dto';
 import { DashboardPeriod, QueryDashboardDto } from './dto/query-dashboard.dto';
 import { QueryPlatformShopDto } from './dto/query-shop.dto';
 import { UpdateShopSlugDto } from './dto/update-shop-slug.dto';
@@ -389,6 +390,79 @@ export class PlatformShopsService {
     return this.prisma.shop.update({
       where: { id },
       data: { slug: dto.slug },
+    });
+  }
+
+  async getSubscription(id: string) {
+    const shop = await this.prisma.shop.findUniqueOrThrow({
+      where: { id },
+      select: {
+        subscriptionStatus: true,
+        subscriptionEndsAt: true,
+        isActive: true,
+      },
+    });
+    const [history, purchasablePackages] = await Promise.all([
+      this.prisma.shopSubscription.findMany({
+        where: { shopId: id },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          package: true,
+          payments: { orderBy: { createdAt: 'desc' }, take: 1 },
+        },
+      }),
+      this.prisma.package.findMany({
+        where: { isTrial: false },
+        orderBy: { durationDays: 'asc' },
+      }),
+    ]);
+
+    return {
+      subscriptionStatus: shop.subscriptionStatus,
+      subscriptionEndsAt: shop.subscriptionEndsAt,
+      isActive: shop.isActive,
+      currentPackage: history[0]?.package ?? null,
+      history,
+      purchasablePackages,
+    };
+  }
+
+  async grantSubscription(id: string, dto: GrantShopSubscriptionDto) {
+    await this.assertExists(id);
+    const pkg = await this.prisma.package.findUnique({
+      where: { id: dto.packageId },
+    });
+    if (!pkg) throw new NotFoundException('Package not found');
+
+    const endAt = new Date(Date.now() + pkg.durationDays * 24 * 60 * 60 * 1000);
+
+    return this.prisma.$transaction(async (tx) => {
+      const subscription = await tx.shopSubscription.create({
+        data: {
+          shopId: id,
+          packageId: pkg.id,
+          status: 'ACTIVE',
+          startAt: new Date(),
+          endAt,
+        },
+      });
+      await tx.subscriptionPayment.create({
+        data: {
+          shopSubscriptionId: subscription.id,
+          amountThb: pkg.priceThb,
+          status: 'PAID',
+          paidAt: new Date(),
+        },
+      });
+      return tx.shop.update({
+        where: { id },
+        data: {
+          subscriptionStatus: 'ACTIVE',
+          subscriptionEndsAt: endAt,
+          isActive: true,
+          suspendReason: null,
+        },
+      });
     });
   }
 

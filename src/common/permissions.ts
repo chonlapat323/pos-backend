@@ -13,9 +13,16 @@ export const PLATFORM_PERMISSIONS = [
   { key: 'platform.categories.manage', label: 'จัดการกลุ่มบริการ (ทุกร้าน)' },
   { key: 'platform.services.manage', label: 'จัดการบริการ (ทุกร้าน)' },
   { key: 'platform.members.manage', label: 'จัดการสมาชิก (ทุกร้าน)' },
-  { key: 'platform.rewards.manage', label: 'จัดการแลก Point / รางวัล (ทุกร้าน)' },
+  {
+    key: 'platform.rewards.manage',
+    label: 'จัดการแลก Point / รางวัล (ทุกร้าน)',
+  },
   { key: 'platform.staff.manage', label: 'จัดการพนักงาน (ทุกร้าน)' },
   { key: 'platform.dashboard.view', label: 'ดูภาพรวมแพลตฟอร์ม' },
+  {
+    key: 'platform.subscriptions.manage',
+    label: 'จัดการ subscription ร้าน (ให้/ต่ออายุแพ็กเกจ)',
+  },
 ] as const;
 
 export type ShopPermission = (typeof SHOP_PERMISSIONS)[number]['key'];

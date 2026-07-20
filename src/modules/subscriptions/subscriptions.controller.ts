@@ -55,4 +55,10 @@ export class SubscriptionsController {
     this.requireOwner(user);
     return this.subscriptionsService.getPurchaseStatus(user.shopId, paymentId);
   }
+
+  @Get('history')
+  getHistory(@CurrentUser() user: CurrentUserPayload) {
+    this.requireOwner(user);
+    return this.subscriptionsService.getHistory(user.shopId);
+  }
 }

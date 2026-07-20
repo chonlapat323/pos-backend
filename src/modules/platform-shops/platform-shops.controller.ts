@@ -13,6 +13,7 @@ import { PlatformPermissionsGuard } from '../../common/guards/platform-permissio
 import { PlatformJwtAuthGuard } from '../platform-auth/platform-jwt-auth.guard';
 import { UpdateShopDto } from '../shop/dto/update-shop.dto';
 import { CreatePlatformShopDto } from './dto/create-shop.dto';
+import { GrantShopSubscriptionDto } from './dto/grant-shop-subscription.dto';
 import { QueryDashboardDto } from './dto/query-dashboard.dto';
 import { QueryPlatformShopDto } from './dto/query-shop.dto';
 import { UpdateShopSlugDto } from './dto/update-shop-slug.dto';
@@ -67,5 +68,20 @@ export class PlatformShopsController {
   @RequirePlatformPermission('platform.shops.manage')
   updateSlug(@Param('id') id: string, @Body() dto: UpdateShopSlugDto) {
     return this.platformShopsService.updateSlug(id, dto);
+  }
+
+  @Get(':id/subscription')
+  @RequirePlatformPermission('platform.subscriptions.manage')
+  getSubscription(@Param('id') id: string) {
+    return this.platformShopsService.getSubscription(id);
+  }
+
+  @Patch(':id/subscription')
+  @RequirePlatformPermission('platform.subscriptions.manage')
+  grantSubscription(
+    @Param('id') id: string,
+    @Body() dto: GrantShopSubscriptionDto,
+  ) {
+    return this.platformShopsService.grantSubscription(id, dto);
   }
 }

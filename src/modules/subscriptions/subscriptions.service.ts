@@ -59,6 +59,26 @@ export class SubscriptionsService {
       throw new BadRequestException('Trial package is not purchasable');
     }
 
+    const shop = await this.prisma.shop.findUniqueOrThrow({
+      where: { id: shopId },
+      select: { subscriptionStatus: true },
+    });
+    if (shop.subscriptionStatus === 'ACTIVE') {
+      const activeSubscription = await this.prisma.shopSubscription.findFirst({
+        where: { shopId, status: 'ACTIVE' },
+        orderBy: { createdAt: 'desc' },
+        include: { package: true },
+      });
+      if (
+        activeSubscription &&
+        pkg.durationDays < activeSubscription.package.durationDays
+      ) {
+        throw new BadRequestException(
+          'Cannot purchase a package shorter than your current active package',
+        );
+      }
+    }
+
     const shopSubscription = await this.prisma.shopSubscription.create({
       data: {
         shopId,
@@ -152,6 +172,17 @@ export class SubscriptionsService {
         },
       }),
     ]);
+  }
+
+  getHistory(shopId: string) {
+    return this.prisma.shopSubscription.findMany({
+      where: { shopId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        package: true,
+        payments: { orderBy: { createdAt: 'desc' }, take: 1 },
+      },
+    });
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_1AM)
