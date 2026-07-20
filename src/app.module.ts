@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
@@ -19,6 +20,7 @@ import { ServiceCategoriesModule } from './modules/service-categories/service-ca
 import { ServicesModule } from './modules/services/services.module';
 import { ShopModule } from './modules/shop/shop.module';
 import { StaffModule } from './modules/staff/staff.module';
+import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { VisitPhotosModule } from './modules/visit-photos/visit-photos.module';
 
@@ -28,6 +30,7 @@ import { VisitPhotosModule } from './modules/visit-photos/visit-photos.module';
       isGlobal: true,
       cache: true,
     }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
     ShopModule,
@@ -47,6 +50,7 @@ import { VisitPhotosModule } from './modules/visit-photos/visit-photos.module';
     CustomerAuthModule,
     CustomerCatalogModule,
     CustomerPortalModule,
+    SubscriptionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

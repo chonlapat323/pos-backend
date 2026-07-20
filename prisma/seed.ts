@@ -7,6 +7,43 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  // --- Subscription packages (fixed catalog, not admin-editable for now) ---
+  const trialPackage = await prisma.package.upsert({
+    where: { code: 'TRIAL_60' },
+    update: {},
+    create: {
+      code: 'TRIAL_60',
+      name: 'ทดลองใช้ฟรี',
+      priceThb: 0,
+      durationDays: 60,
+      isTrial: true,
+    },
+  });
+
+  await prisma.package.upsert({
+    where: { code: 'SIX_MONTH' },
+    update: {},
+    create: {
+      code: 'SIX_MONTH',
+      name: 'รายครึ่งปี',
+      priceThb: 2500,
+      durationDays: 183,
+    },
+  });
+
+  await prisma.package.upsert({
+    where: { code: 'ONE_YEAR' },
+    update: {},
+    create: {
+      code: 'ONE_YEAR',
+      name: 'รายปี',
+      priceThb: 4000,
+      durationDays: 365,
+    },
+  });
+
+  console.log('Seeded packages: TRIAL_60 / SIX_MONTH / ONE_YEAR');
+
   const shop = await prisma.shop.upsert({
     where: { slug: 'demo' },
     update: {},
@@ -15,8 +52,33 @@ async function main() {
       slug: 'demo',
       shopType: 'MULTI',
       bahtPerPoint: 50,
+      subscriptionStatus: 'TRIALING',
+      subscriptionEndsAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
     },
   });
+
+  // The demo shop may already exist from before this feature was added (upsert's `update: {}`
+  // doesn't backfill it) - patch it once here so pre-existing seeded shops also get a trial.
+  const existingDemoSubscription = await prisma.shopSubscription.findFirst({
+    where: { shopId: shop.id },
+  });
+  if (!existingDemoSubscription) {
+    const trialEndsAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+    await prisma.shop.update({
+      where: { id: shop.id },
+      data: { subscriptionStatus: 'TRIALING', subscriptionEndsAt: trialEndsAt },
+    });
+    await prisma.shopSubscription.create({
+      data: {
+        shopId: shop.id,
+        packageId: trialPackage.id,
+        status: 'TRIALING',
+        startAt: new Date(),
+        endAt: trialEndsAt,
+      },
+    });
+    console.log('Seeded demo shop trial subscription (60 days)');
+  }
 
   const passwordHash = await bcrypt.hash('admin1234', 10);
   const owner = await prisma.staffUser.upsert({

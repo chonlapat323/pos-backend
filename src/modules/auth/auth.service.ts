@@ -15,7 +15,9 @@ export class AuthService {
   async login(dto: LoginDto) {
     const staff = await this.prisma.staffUser.findUnique({
       where: { email: dto.email },
-      include: { shop: { select: { isActive: true } } },
+      include: {
+        shop: { select: { isActive: true, suspendReason: true } },
+      },
     });
 
     if (!staff || !staff.passwordHash || !staff.isActive) {
@@ -30,8 +32,22 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
+    const subscriptionExpired = !staff.shop.isActive && staff.shop.suspendReason === 'SUBSCRIPTION_EXPIRED';
     if (!staff.shop.isActive) {
-      throw new UnauthorizedException('This shop has been suspended');
+      // An owner whose shop is only suspended for a lapsed subscription (not a manual admin
+      // suspension) is let through so they can reach the in-app purchase flow and reactivate;
+      // everything else they'd normally do still gets rejected downstream by JwtStrategy.
+      const canBypass = staff.role === 'OWNER' && subscriptionExpired;
+      if (!canBypass) {
+        const reason = staff.shop.suspendReason ?? 'MANUAL';
+        throw new UnauthorizedException({
+          message:
+            reason === 'SUBSCRIPTION_EXPIRED'
+              ? "This shop's subscription has expired"
+              : 'This shop has been suspended',
+          reason,
+        });
+      }
     }
 
     const payload: JwtPayload = {
@@ -44,6 +60,7 @@ export class AuthService {
     return {
       accessToken: await this.jwtService.signAsync(payload),
       user: payload,
+      subscriptionExpired,
     };
   }
 }

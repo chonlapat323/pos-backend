@@ -46,6 +46,30 @@ enum PhotoType {
   AFTER
 }
 
+enum PackageCode {
+  TRIAL_60
+  SIX_MONTH
+  ONE_YEAR
+}
+
+enum SubscriptionStatus {
+  PENDING
+  TRIALING
+  ACTIVE
+  EXPIRED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+enum ShopSuspendReason {
+  MANUAL
+  SUBSCRIPTION_EXPIRED
+}
+
 model PlatformAdmin {
   id           String  @id @default(cuid())
   email        String  @unique
@@ -95,6 +119,10 @@ model Shop {
   signupBonusPoints Int      @default(50)
   isActive          Boolean  @default(true)
 
+  subscriptionStatus SubscriptionStatus @default(TRIALING)
+  subscriptionEndsAt DateTime?
+  suspendReason      ShopSuspendReason?
+
   staff             StaffUser[]
   categories        ServiceCategory[]
   services          Service[]
@@ -104,6 +132,7 @@ model Shop {
   pointTransactions PointTransaction[]
   visitPhotos       VisitPhoto[]
   roles             Role[]
+  subscriptions     ShopSubscription[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -261,6 +290,46 @@ model VisitPhoto {
   member   Member    @relation(fields: [memberId], references: [id])
   type     PhotoType
   imageUrl String
+
+  createdAt DateTime @default(now())
+}
+
+model Package {
+  id           String      @id @default(cuid())
+  code         PackageCode @unique
+  name         String
+  priceThb     Int
+  durationDays Int
+  isTrial      Boolean     @default(false)
+
+  subscriptions ShopSubscription[]
+
+  createdAt DateTime @default(now())
+}
+
+model ShopSubscription {
+  id        String             @id @default(cuid())
+  shopId    String
+  shop      Shop               @relation(fields: [shopId], references: [id])
+  packageId String
+  package   Package            @relation(fields: [packageId], references: [id])
+  status    SubscriptionStatus @default(TRIALING)
+  startAt   DateTime
+  endAt     DateTime
+
+  payments SubscriptionPayment[]
+
+  createdAt DateTime @default(now())
+}
+
+model SubscriptionPayment {
+  id                 String        @id @default(cuid())
+  shopSubscriptionId String
+  shopSubscription   ShopSubscription @relation(fields: [shopSubscriptionId], references: [id])
+  amountThb          Int
+  omiseChargeId      String?
+  status             PaymentStatus @default(PENDING)
+  paidAt             DateTime?
 
   createdAt DateTime @default(now())
 }

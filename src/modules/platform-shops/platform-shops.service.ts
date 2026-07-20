@@ -317,6 +317,13 @@ export class PlatformShopsService {
     const passwordHash = await bcrypt.hash(dto.ownerPassword, 10);
 
     return this.prisma.$transaction(async (tx) => {
+      const trialPackage = await tx.package.findUniqueOrThrow({
+        where: { code: 'TRIAL_60' },
+      });
+      const trialEndsAt = new Date(
+        Date.now() + trialPackage.durationDays * 24 * 60 * 60 * 1000,
+      );
+
       const shop = await tx.shop.create({
         data: {
           name: dto.name,
@@ -324,6 +331,8 @@ export class PlatformShopsService {
           shopType: dto.shopType,
           address: dto.address,
           phone: dto.phone,
+          subscriptionStatus: 'TRIALING',
+          subscriptionEndsAt: trialEndsAt,
         },
       });
 
@@ -334,6 +343,16 @@ export class PlatformShopsService {
           email: dto.ownerEmail,
           passwordHash,
           role: 'OWNER',
+        },
+      });
+
+      await tx.shopSubscription.create({
+        data: {
+          shopId: shop.id,
+          packageId: trialPackage.id,
+          status: 'TRIALING',
+          startAt: new Date(),
+          endAt: trialEndsAt,
         },
       });
 
@@ -350,7 +369,10 @@ export class PlatformShopsService {
     await this.assertExists(id);
     return this.prisma.shop.update({
       where: { id },
-      data: { isActive: dto.isActive },
+      data: {
+        isActive: dto.isActive,
+        suspendReason: dto.isActive ? null : 'MANUAL',
+      },
     });
   }
 
