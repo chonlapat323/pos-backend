@@ -7,6 +7,15 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { OmiseService } from '../omise/omise.service';
 import { PrismaService } from '../prisma/prisma.service';
 
+// A shop already on its highest-tier package can't buy the same-or-lower tier again until it's
+// within this many days of expiring (or already expired) - otherwise every purchase would just
+// silently discard whatever time is still left on the current period.
+const RENEWAL_WINDOW_DAYS = 7;
+
+function daysUntil(date: Date): number {
+  return Math.ceil((date.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+}
+
 @Injectable()
 export class SubscriptionsService {
   constructor(
@@ -61,7 +70,7 @@ export class SubscriptionsService {
 
     const shop = await this.prisma.shop.findUniqueOrThrow({
       where: { id: shopId },
-      select: { subscriptionStatus: true },
+      select: { subscriptionStatus: true, subscriptionEndsAt: true },
     });
     if (shop.subscriptionStatus === 'ACTIVE') {
       const activeSubscription = await this.prisma.shopSubscription.findFirst({
@@ -69,13 +78,19 @@ export class SubscriptionsService {
         orderBy: { createdAt: 'desc' },
         include: { package: true },
       });
-      if (
-        activeSubscription &&
-        pkg.durationDays < activeSubscription.package.durationDays
-      ) {
-        throw new BadRequestException(
-          'Cannot purchase a package shorter than your current active package',
-        );
+      if (activeSubscription) {
+        const isUpgrade =
+          pkg.durationDays > activeSubscription.package.durationDays;
+        if (!isUpgrade) {
+          const daysLeft = shop.subscriptionEndsAt
+            ? daysUntil(shop.subscriptionEndsAt)
+            : 0;
+          if (daysLeft > RENEWAL_WINDOW_DAYS) {
+            throw new BadRequestException(
+              `Your current package is still active for ${daysLeft} more days - renewal opens ${RENEWAL_WINDOW_DAYS} days before it expires`,
+            );
+          }
+        }
       }
     }
 
@@ -149,18 +164,30 @@ export class SubscriptionsService {
       include: { shopSubscription: { include: { package: true } } },
     });
     const subscription = payment.shopSubscription;
+
+    const shop = await this.prisma.shop.findUniqueOrThrow({
+      where: { id: subscription.shopId },
+      select: { subscriptionEndsAt: true },
+    });
+    const now = new Date();
+    // Renewing before the current period actually ends extends it rather than discarding the
+    // remaining time - only fall back to "now" when there's no time left to stack on top of.
+    const base =
+      shop.subscriptionEndsAt && shop.subscriptionEndsAt > now
+        ? shop.subscriptionEndsAt
+        : now;
     const endAt = new Date(
-      Date.now() + subscription.package.durationDays * 24 * 60 * 60 * 1000,
+      base.getTime() + subscription.package.durationDays * 24 * 60 * 60 * 1000,
     );
 
     await this.prisma.$transaction([
       this.prisma.subscriptionPayment.update({
         where: { id: payment.id },
-        data: { status: 'PAID', paidAt: new Date() },
+        data: { status: 'PAID', paidAt: now },
       }),
       this.prisma.shopSubscription.update({
         where: { id: subscription.id },
-        data: { status: 'ACTIVE', startAt: new Date(), endAt },
+        data: { status: 'ACTIVE', startAt: now, endAt },
       }),
       this.prisma.shop.update({
         where: { id: subscription.shopId },

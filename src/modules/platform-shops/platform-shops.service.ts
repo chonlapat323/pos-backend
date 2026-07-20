@@ -430,13 +430,26 @@ export class PlatformShopsService {
   }
 
   async grantSubscription(id: string, dto: GrantShopSubscriptionDto) {
-    await this.assertExists(id);
+    const shop = await this.prisma.shop.findUnique({
+      where: { id },
+      select: { subscriptionEndsAt: true },
+    });
+    if (!shop) throw new NotFoundException('Shop not found');
     const pkg = await this.prisma.package.findUnique({
       where: { id: dto.packageId },
     });
     if (!pkg) throw new NotFoundException('Package not found');
 
-    const endAt = new Date(Date.now() + pkg.durationDays * 24 * 60 * 60 * 1000);
+    const now = new Date();
+    // Same rule as the owner-facing purchase flow: extend on top of whatever time is left
+    // instead of discarding it when granting/extending before the current period ends.
+    const base =
+      shop.subscriptionEndsAt && shop.subscriptionEndsAt > now
+        ? shop.subscriptionEndsAt
+        : now;
+    const endAt = new Date(
+      base.getTime() + pkg.durationDays * 24 * 60 * 60 * 1000,
+    );
 
     return this.prisma.$transaction(async (tx) => {
       const subscription = await tx.shopSubscription.create({
@@ -444,7 +457,7 @@ export class PlatformShopsService {
           shopId: id,
           packageId: pkg.id,
           status: 'ACTIVE',
-          startAt: new Date(),
+          startAt: now,
           endAt,
         },
       });
@@ -453,7 +466,7 @@ export class PlatformShopsService {
           shopSubscriptionId: subscription.id,
           amountThb: pkg.priceThb,
           status: 'PAID',
-          paidAt: new Date(),
+          paidAt: now,
         },
       });
       return tx.shop.update({
