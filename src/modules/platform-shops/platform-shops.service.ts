@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
 import { UpdateShopDto } from '../shop/dto/update-shop.dto';
@@ -472,13 +473,44 @@ export class PlatformShopsService {
   ): Promise<PaginatedResult<unknown>> {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 20;
-    const where = query.search
-      ? {
-          shop: {
-            name: { contains: query.search, mode: 'insensitive' as const },
-          },
-        }
-      : {};
+
+    const eventTypeWhere: Prisma.ShopSubscriptionWhereInput = (() => {
+      switch (query.eventType) {
+        case 'TRIAL_STARTED':
+          return { package: { isTrial: true } };
+        case 'PURCHASED':
+          return {
+            package: { isTrial: false },
+            payments: { some: { omiseChargeId: { not: null } } },
+          };
+        case 'ADMIN_GRANTED':
+          return {
+            package: { isTrial: false },
+            payments: { some: { omiseChargeId: null } },
+          };
+        default:
+          return {};
+      }
+    })();
+
+    const where: Prisma.ShopSubscriptionWhereInput = {
+      ...(query.search
+        ? {
+            shop: {
+              name: { contains: query.search, mode: 'insensitive' as const },
+            },
+          }
+        : {}),
+      ...eventTypeWhere,
+      ...(query.dateFrom || query.dateTo
+        ? {
+            createdAt: {
+              ...(query.dateFrom ? { gte: new Date(query.dateFrom) } : {}),
+              ...(query.dateTo ? { lte: new Date(query.dateTo) } : {}),
+            },
+          }
+        : {}),
+    };
 
     const [rows, total] = await Promise.all([
       this.prisma.shopSubscription.findMany({
