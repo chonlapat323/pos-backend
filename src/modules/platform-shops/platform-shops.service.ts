@@ -16,6 +16,21 @@ import { QuerySubscriptionEventsDto } from './dto/query-subscription-events.dto'
 import { UpdateShopSlugDto } from './dto/update-shop-slug.dto';
 import { UpdateShopStatusDto } from './dto/update-shop-status.dto';
 
+type SubscriptionEventType = 'TRIAL_STARTED' | 'PURCHASED' | 'ADMIN_GRANTED';
+
+// No dedicated audit-log table - derive what happened from the data already on hand: a trial
+// package means the shop's trial started, a payment with no omiseChargeId means a platform admin
+// manually granted/extended it, otherwise it's a real Omise-paid purchase.
+function deriveSubscriptionEventType(subscription: {
+  package: { isTrial: boolean };
+  payments: { omiseChargeId: string | null }[];
+}): SubscriptionEventType {
+  const payment = subscription.payments[0];
+  if (subscription.package.isTrial) return 'TRIAL_STARTED';
+  if (payment && !payment.omiseChargeId) return 'ADMIN_GRANTED';
+  return 'PURCHASED';
+}
+
 function startOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
@@ -260,16 +275,36 @@ export class PlatformShopsService {
       ? { name: { contains: query.search, mode: 'insensitive' as const } }
       : {};
 
-    const [data, total] = await Promise.all([
+    const [shops, total] = await Promise.all([
       this.prisma.shop.findMany({
         where,
-        include: { _count: { select: { members: true, staff: true } } },
+        include: {
+          _count: { select: { members: true, staff: true } },
+          subscriptions: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            include: {
+              package: true,
+              payments: { orderBy: { createdAt: 'desc' }, take: 1 },
+            },
+          },
+        },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
       this.prisma.shop.count({ where }),
     ]);
+
+    const data = shops.map(({ subscriptions, ...shop }) => {
+      const [latest] = subscriptions;
+      return {
+        ...shop,
+        latestSubscriptionEvent: latest
+          ? { ...latest, eventType: deriveSubscriptionEventType(latest) }
+          : null,
+      };
+    });
 
     return { data, total, page, pageSize };
   }
@@ -508,6 +543,13 @@ export class PlatformShopsService {
       orderBy: { createdAt: 'desc' },
     });
 
+    // A previous ShopSubscription row's own `status` is never flipped to EXPIRED after the fact -
+    // it only ever reflects what it was set to at creation time (ACTIVE/TRIALING), even long after
+    // its endAt has passed in real time. So whether reverting to it actually leaves the shop usable
+    // has to be decided from endAt vs now, not from the stored status.
+    const now = new Date();
+    const previousStillValid = previous !== null && previous.endAt > now;
+
     return this.prisma.$transaction(async (tx) => {
       await tx.shopSubscription.update({
         where: { id: latest.id },
@@ -516,19 +558,21 @@ export class PlatformShopsService {
 
       return tx.shop.update({
         where: { id: shopId },
-        data: previous
+        data: previousStillValid
           ? {
               subscriptionStatus: previous.status,
               subscriptionEndsAt: previous.endAt,
-              isActive: previous.status !== 'EXPIRED',
-              suspendReason:
-                previous.status === 'EXPIRED' ? 'SUBSCRIPTION_EXPIRED' : null,
+              isActive: true,
+              suspendReason: null,
             }
           : {
+              // No package left that's actually still valid - lock the shop down the same way a
+              // naturally lapsed subscription does (not 'MANUAL'), so the owner can still reach
+              // the purchase flow via the lenient guard instead of being fully locked out.
               subscriptionStatus: 'EXPIRED',
-              subscriptionEndsAt: new Date(),
+              subscriptionEndsAt: previous?.endAt ?? now,
               isActive: false,
-              suspendReason: 'MANUAL',
+              suspendReason: 'SUBSCRIPTION_EXPIRED',
             },
       });
     });
@@ -593,21 +637,10 @@ export class PlatformShopsService {
       this.prisma.shopSubscription.count({ where }),
     ]);
 
-    // No dedicated audit-log table - derive what happened from the data already on hand:
-    // a trial package means the shop's trial started, a payment with no omiseChargeId means a
-    // platform admin manually granted/extended it, otherwise it's a real Omise-paid purchase.
-    const data = rows.map((row) => {
-      const payment = row.payments[0];
-      let eventType: 'TRIAL_STARTED' | 'PURCHASED' | 'ADMIN_GRANTED';
-      if (row.package.isTrial) {
-        eventType = 'TRIAL_STARTED';
-      } else if (payment && !payment.omiseChargeId) {
-        eventType = 'ADMIN_GRANTED';
-      } else {
-        eventType = 'PURCHASED';
-      }
-      return { ...row, eventType };
-    });
+    const data = rows.map((row) => ({
+      ...row,
+      eventType: deriveSubscriptionEventType(row),
+    }));
 
     return { data, total, page, pageSize };
   }
