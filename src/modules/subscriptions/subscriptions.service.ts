@@ -59,7 +59,11 @@ export class SubscriptionsService {
     };
   }
 
-  async purchase(shopId: string, packageId: string) {
+  async purchase(
+    shopId: string,
+    packageId: string,
+    options?: { paymentMethod?: 'PROMPTPAY' | 'CARD'; omiseToken?: string },
+  ) {
     const pkg = await this.prisma.package.findUnique({
       where: { id: packageId },
     });
@@ -104,9 +108,48 @@ export class SubscriptionsService {
       },
     });
 
+    const description = `POS Services - ${pkg.name}`;
+
+    if (options?.paymentMethod === 'CARD') {
+      if (!options.omiseToken) {
+        throw new BadRequestException(
+          'Card token is required for card payments',
+        );
+      }
+      const charge = await this.omiseService.createCardCharge({
+        token: options.omiseToken,
+        amountThb: pkg.priceThb,
+        description,
+      });
+      if (charge.status === 'failed') {
+        throw new BadRequestException(
+          charge.failure_message ?? 'Card payment failed',
+        );
+      }
+
+      const payment = await this.prisma.subscriptionPayment.create({
+        data: {
+          shopSubscriptionId: shopSubscription.id,
+          amountThb: pkg.priceThb,
+          omiseChargeId: charge.id,
+          status: 'PENDING',
+        },
+      });
+
+      return {
+        paymentId: payment.id,
+        qrImageUri: null,
+        expiresAt: null,
+        // Only set when the card actually needs 3D Secure - the caller sends the owner there
+        // and then polls getPurchaseStatus() the same way as a PromptPay charge.
+        authorizeUri:
+          charge.status === 'pending' ? (charge.authorize_uri ?? null) : null,
+      };
+    }
+
     const charge = await this.omiseService.createPromptPayCharge({
       amountThb: pkg.priceThb,
-      description: `POS Services - ${pkg.name}`,
+      description,
     });
 
     const payment = await this.prisma.subscriptionPayment.create({
@@ -122,6 +165,7 @@ export class SubscriptionsService {
       paymentId: payment.id,
       qrImageUri: charge.qrImageUri,
       expiresAt: charge.expiresAt,
+      authorizeUri: null,
     };
   }
 

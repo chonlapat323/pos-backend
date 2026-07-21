@@ -11,6 +11,9 @@ type OmiseCharge = {
   currency: string;
   description?: string;
   expires_at?: string;
+  authorize_uri?: string;
+  failure_code?: string;
+  failure_message?: string;
   source?: {
     scannable_code?: {
       image?: { download_uri?: string };
@@ -136,6 +139,40 @@ export class OmiseService {
     const expiresAt =
       charge.expires_at ?? new Date(Date.now() + 15 * 60 * 1000).toISOString();
     return { chargeId: charge.id, qrImageUri, expiresAt };
+  }
+
+  // The card number/CVV never reach this backend - the mobile app tokenizes the card directly
+  // against Omise's Vault API using only the public key, and hands us just the resulting
+  // tokn_xxx string. `capture: true` settles the charge immediately rather than a separate
+  // authorize+capture step. A Thai card frequently comes back `status: 'pending'` with an
+  // `authorize_uri` when 3D Secure is required - the caller is responsible for sending the
+  // shop owner there and then polling getCharge() until it resolves.
+  async createCardCharge(params: {
+    token: string;
+    amountThb: number;
+    description: string;
+  }): Promise<OmiseCharge> {
+    const amountSatangs = Math.round(params.amountThb * 100);
+
+    const res = await fetch(`${this.apiUrl}/charges`, {
+      method: 'POST',
+      headers: {
+        Authorization: this.authHeader,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        amount: amountSatangs,
+        currency: 'thb',
+        card: params.token,
+        description: params.description,
+        capture: true,
+      }),
+    });
+    const charge = (await res.json()) as OmiseCharge & { message?: string };
+    if (!res.ok) {
+      throw new Error(charge.message ?? 'Failed to create card charge');
+    }
+    return charge;
   }
 
   async getCharge(chargeId: string): Promise<OmiseCharge> {

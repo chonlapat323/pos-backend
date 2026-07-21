@@ -44,7 +44,10 @@ export class SubscriptionsController {
     @Body() dto: PurchaseSubscriptionDto,
   ) {
     this.requireOwner(user);
-    return this.subscriptionsService.purchase(user.shopId, dto.packageId);
+    return this.subscriptionsService.purchase(user.shopId, dto.packageId, {
+      paymentMethod: dto.paymentMethod,
+      omiseToken: dto.omiseToken,
+    });
   }
 
   @Get('purchase/:paymentId/status')
