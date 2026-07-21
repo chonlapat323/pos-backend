@@ -1,5 +1,5 @@
 import { PhotoType } from '@prisma/client';
-import { IsEnum, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 
 export class CreateVisitPhotoDto {
   @IsString()
@@ -10,4 +10,8 @@ export class CreateVisitPhotoDto {
 
   @IsString()
   imageUrl: string;
+
+  @IsOptional()
+  @IsString()
+  billId?: string;
 }

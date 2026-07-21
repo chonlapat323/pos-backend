@@ -16,12 +16,16 @@ export class VisitPhotosService {
 
   async create(shopId: string, dto: CreateVisitPhotoDto) {
     await this.assertMemberExists(shopId, dto.memberId);
+    if (dto.billId) {
+      await this.assertBillBelongsToMember(shopId, dto.billId, dto.memberId);
+    }
     return this.prisma.visitPhoto.create({
       data: {
         shopId,
         memberId: dto.memberId,
         type: dto.type,
         imageUrl: dto.imageUrl,
+        billId: dto.billId,
       },
     });
   }
@@ -42,5 +46,17 @@ export class VisitPhotosService {
       select: { id: true },
     });
     if (!member) throw new NotFoundException('Member not found');
+  }
+
+  private async assertBillBelongsToMember(
+    shopId: string,
+    billId: string,
+    memberId: string,
+  ) {
+    const bill = await this.prisma.bill.findFirst({
+      where: { id: billId, shopId, memberId },
+      select: { id: true },
+    });
+    if (!bill) throw new NotFoundException('Bill not found');
   }
 }
