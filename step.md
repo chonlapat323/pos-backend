@@ -32,7 +32,7 @@ docker ps --format "table {{.Names}}\t{{.Ports}}"
 ```
 DATABASE_URL="postgresql://postgres:postgres@localhost:5434/pos_services?schema=public"
 PORT=3010
-CORS_ORIGINS="https://admin-pos.beautyup-enterprise.com,https://sales-pos.beautyup-enterprise.com"
+CORS_ORIGINS="https://admin-pos.beautyup-enterprise.com,https://shop-pos.beautyup-enterprise.com"
 BACKEND_PUBLIC_URL="https://api-pos.beautyup-enterprise.com"
 JWT_SECRET="<สุ่มค่าใหม่ ยาวๆ>"
 JWT_EXPIRES_IN="7d"
