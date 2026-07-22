@@ -12,7 +12,7 @@ module.exports = {
         PORT: 3010,
         // Fill in with the real production database, secrets, and Omise live keys before
         // deploying - the values below are dev-only placeholders, not safe to run as-is.
-        DATABASE_URL: "postgresql://postgres:postgres@localhost:5433/pos_services?schema=public",
+        DATABASE_URL: "postgresql://postgres:postgres@localhost:5434/pos_services?schema=public",
         CORS_ORIGINS: "https://pos-admin.beautyup-enterprise.com,https://pos-sales.beautyup-enterprise.com",
         BACKEND_PUBLIC_URL: "https://pos-api.beautyup-enterprise.com",
         JWT_SECRET: "CHANGE_ME",
