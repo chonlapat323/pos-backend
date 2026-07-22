@@ -12,7 +12,11 @@
 git clone <repo-url> pos-backend
 cd pos-backend
 npm install
+npx prisma generate
 ```
+`npm install` แค่ติดตั้ง package เปล่าๆ ของ `@prisma/client` — ต้องรัน `prisma generate` เพิ่มเพื่อสร้างโค้ด client จริงตาม schema ก่อน ไม่งั้น build/seed จะพังด้วย error แบบ "has no exported member 'PrismaClient'"
+
+**หมายเหตุ**: ถ้าเครื่องนี้ใช้แค่ `docker-compose` (มีขีดกลาง, ตัวเก่า) แทน `docker compose` (เว้นวรรค) ให้เปลี่ยนทุกคำสั่ง `docker compose` ในไฟล์นี้เป็น `docker-compose` แทน
 
 ## 2. ตั้งค่า Database
 ```
