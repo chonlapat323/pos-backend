@@ -13,8 +13,8 @@ module.exports = {
         // Fill in with the real production database, secrets, and Omise live keys before
         // deploying - the values below are dev-only placeholders, not safe to run as-is.
         DATABASE_URL: "postgresql://postgres:postgres@localhost:5434/pos_services?schema=public",
-        CORS_ORIGINS: "https://pos-admin.beautyup-enterprise.com,https://pos-sales.beautyup-enterprise.com",
-        BACKEND_PUBLIC_URL: "https://pos-api.beautyup-enterprise.com",
+        CORS_ORIGINS: "https://admin-pos.beautyup-enterprise.com,https://sales-pos.beautyup-enterprise.com",
+        BACKEND_PUBLIC_URL: "https://api-pos.beautyup-enterprise.com",
         JWT_SECRET: "CHANGE_ME",
         JWT_EXPIRES_IN: "7d",
         PLATFORM_JWT_SECRET: "CHANGE_ME",

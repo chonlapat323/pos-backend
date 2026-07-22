@@ -32,8 +32,8 @@ docker ps --format "table {{.Names}}\t{{.Ports}}"
 ```
 DATABASE_URL="postgresql://postgres:postgres@localhost:5434/pos_services?schema=public"
 PORT=3010
-CORS_ORIGINS="https://pos-admin.beautyup-enterprise.com,https://pos-sales.beautyup-enterprise.com"
-BACKEND_PUBLIC_URL="https://pos-api.beautyup-enterprise.com"
+CORS_ORIGINS="https://admin-pos.beautyup-enterprise.com,https://sales-pos.beautyup-enterprise.com"
+BACKEND_PUBLIC_URL="https://api-pos.beautyup-enterprise.com"
 JWT_SECRET="<สุ่มค่าใหม่ ยาวๆ>"
 JWT_EXPIRES_IN="7d"
 PLATFORM_JWT_SECRET="<สุ่มค่าใหม่ ยาวๆ>"
@@ -68,7 +68,7 @@ pm2 save
 ## 7. ต่อ reverse proxy (Caddy)
 เพิ่มใน Caddyfile:
 ```
-pos-api.beautyup-enterprise.com {
+api-pos.beautyup-enterprise.com {
     reverse_proxy localhost:3010
 }
 ```
@@ -76,7 +76,7 @@ pos-api.beautyup-enterprise.com {
 
 ## 8. ตรวจสอบ
 ```
-curl https://pos-api.beautyup-enterprise.com/subscriptions/packages
+curl https://api-pos.beautyup-enterprise.com/subscriptions/packages
 ```
 ถ้าได้ JSON กลับมา (ไม่ error) แปลว่าใช้งานได้แล้ว
 
