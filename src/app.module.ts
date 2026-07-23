@@ -11,6 +11,7 @@ import { CustomerPortalModule } from './modules/customer-portal/customer-portal.
 import { MembersModule } from './modules/members/members.module';
 import { PlatformAuthModule } from './modules/platform-auth/platform-auth.module';
 import { PlatformManagementModule } from './modules/platform-management/platform-management.module';
+import { PlatformSettingsModule } from './modules/platform-settings/platform-settings.module';
 import { PlatformShopsModule } from './modules/platform-shops/platform-shops.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { ReportsModule } from './modules/reports/reports.module';
@@ -44,6 +45,7 @@ import { VisitPhotosModule } from './modules/visit-photos/visit-photos.module';
     ReportsModule,
     PlatformAuthModule,
     PlatformShopsModule,
+    PlatformSettingsModule,
     PlatformManagementModule,
     UploadsModule,
     VisitPhotosModule,

@@ -26,6 +26,12 @@ export class SubscriptionsController {
     }
   }
 
+  @Get('config')
+  getConfig(@CurrentUser() user: CurrentUserPayload) {
+    this.requireOwner(user);
+    return this.subscriptionsService.getConfig();
+  }
+
   @Get('packages')
   listPackages(@CurrentUser() user: CurrentUserPayload) {
     this.requireOwner(user);

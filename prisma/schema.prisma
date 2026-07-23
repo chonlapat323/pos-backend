@@ -334,3 +334,12 @@ model SubscriptionPayment {
 
   createdAt DateTime @default(now())
 }
+
+// Small admin-editable key/value config store - lets platform admins change values like the
+// Omise public key without a redeploy. Falls back to the matching env var when a key has no row
+// yet, so this is additive and doesn't require every value to be migrated in up front.
+model PlatformSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

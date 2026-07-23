@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { OmiseService } from '../omise/omise.service';
+import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 // A shop already on its highest-tier package can't buy the same-or-lower tier again until it's
@@ -21,7 +22,17 @@ export class SubscriptionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly omiseService: OmiseService,
+    private readonly platformSettingsService: PlatformSettingsService,
   ) {}
+
+  // Lets the mobile app read the Omise public key (needed to tokenize a card) at runtime instead
+  // of baking it into the build - a platform admin can rotate it from the settings page without
+  // anyone having to rebuild and resubmit the app to the store.
+  async getConfig() {
+    const omisePublicKey =
+      await this.platformSettingsService.get('OMISE_PUBLIC_KEY');
+    return { omisePublicKey };
+  }
 
   listPurchasablePackages() {
     return this.prisma.package.findMany({
